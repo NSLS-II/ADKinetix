@@ -1,0 +1,23 @@
+include "ADBase.template"
+
+record(ai, "$(P)$(R)Temperature_RBV")
+{
+   field(DTYP, "asynFloat64")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_TEMP")
+   field(SCAN, "1 second")
+}
+
+record(mbbo, "$(P)$(R)FanSpeed")
+{
+   field(DTYP, "asynFloat64")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_FAN_SPEED")
+   field(SCAN, "I/O Intr")
+}
+
+
+record(mbbi, "$(P)$(R)FanSpeed_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_FAN_SPEED")
+   field(SCAN, "I/O Intr")
+}
