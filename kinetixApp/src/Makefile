@@ -21,6 +21,7 @@ else ifeq (linux-x86, $(T_A))
 LIBRARY_IOC = $(LIBRARY_NAME)
 
 else ifeq (linux-x86_64, $(T_A))
+USR_CXXFLAGS += -pthread
 LIBRARY_IOC = $(LIBRARY_NAME)
 
 endif
