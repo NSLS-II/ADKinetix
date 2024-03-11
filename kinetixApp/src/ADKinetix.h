@@ -36,6 +36,9 @@
 #include "master.h"
 #include "pvcam.h"
 
+// PVCam examples helper data structures
+#include "ADKinetixDS.h"
+
 //______________________________________________________________________________________________
 
 #define KINETIX_CIRC_BUFF_SIZE 50
@@ -44,86 +47,7 @@ static const char *driverName = "ADKinetix";
 
 //______________________________________________________________________________________________
 
-struct SpdtabGain
-{
-    
-    int32 index;
-    std::string name;
-    int16 bitDepth;
-};
 
-struct SpdtabSpeed
-{
-    int32 index;
-    uns16 pixTimeNs;
-    std::vector<SpdtabGain> gains;
-};
-
-struct SpdtabPort
-{
-    int32 value;
-    std::string name;
-    std::vector<SpdtabSpeed> speeds;
-};
-
-struct Event
-{
-    std::mutex mutex;
-    std::condition_variable cond;
-    bool flag;
-};
-
-typedef struct EOFContext {
-    int data1;
-
-};
-
-struct CameraContext
-{
-    char camName[CAM_NAME_LEN];
-    bool isCamOpen;
-    // All members below are initialized once the camera is successfully opened
-    int16 hcam;
-    uns16 sensorResX;
-    uns16 sensorResY;
-    rgn_type region;
-    std::vector<SpdtabPort> speedTable;
-    Event eofEvent;
-    void* eofContext;
-    FRAME_INFO eofFrameInfo;
-    void* eofFrame;
-};
-
-
-
-
-
-
-
-// struct NVP
-// {
-//     int32 value;
-//     std::string name;
-// };
-// typedef std::vector<NVP> NVPC;
-
-// struct PvcamPpFeature
-// {
-//     int16 index;
-//     uns32 id;
-//     std::string name;
-//     std::vector<PvcamPpParameter> parameterList;
-// };
-
-// struct PvcamPpParameter
-// {
-//     int16 index;
-//     uns32 id;
-//     std::string name;
-//     uns32 minValue;
-//     uns32 maxValue;
-//     uns32 defValue;
-// };
 
 //______________________________________________________________________________________________
 
@@ -145,7 +69,8 @@ public:
     void monitorThread();
     void acquisitionThread();
     ~ADKinetix ();
-    bool waitForEofEvent(uns32 timeoutMs, bool &errorOccurred);
+    bool waitForEofEvent(uns32 timeoutMs);
+
 
 protected:
     int KinetixTemperature;
@@ -157,6 +82,15 @@ protected:
 
 private:
     void reportKinetixError(const char *functionName, const char *appMessage);
+
+    bool isParamAvailable(int16 hcam, uns32 paramID, const char* paramName);
+    bool readEnumeration(int16 hcam, NVPC* pNvpc, uns32 paramID, const char* paramName);
+    bool getSpeedTable(std::vector<SpdtabPort>& speedTable);
+    void updateImageFormat();
+
+    asynStatus acquireStart();
+    void acquireStop();
+
     CameraContext* cameraContext; 
     bool alive = false;
     int deviceIndex;
