@@ -46,6 +46,12 @@ static void acquisitionThreadC(void *drvPvt)
     pPvt->acquisitionThread();
 }
 
+static void exitCallbackC(void* drvPvt)
+{
+    ADKinetix *pPvt = (ADKinetix *)drvPvt;
+    delete pPvt;
+}
+
 //_____________________________________________________________________________________________
 //_____________________________________________________________________________________________
 //Public methods
@@ -159,7 +165,67 @@ bool ADKinetix::readEnumeration(int16 hcam, NVPC* pNvpc, uns32 paramID, const ch
     return !pNvpc->empty();
 }
 
-bool ADKinetix::getSpeedTable(std::vector<SpdtabPort>& speedTable)
+asynStatus ADKinetix::selectSpeedTableMode(int speedTableIndex, int speedIndex, int gainIndex)
+{
+
+    const char* functionName = "selectSpeedTableMode";
+    if (PV_OK != pl_set_param(this->cameraContext->hcam, PARAM_READOUT_PORT,
+                (void*)&this->cameraContext->speedTable[speedTableIndex].value))
+    {
+        ERR_TO_STATUS("Readout port could not be set");
+        return asynError;
+    }
+    LOG_ARGS("  Readout port set to '%s'\n", this->cameraContext->speedTable[speedTableIndex].name.c_str());
+
+    if (PV_OK != pl_set_param(this->cameraContext->hcam, PARAM_SPDTAB_INDEX,
+                (void*)&this->cameraContext->speedTable[speedTableIndex].speeds[0].index))
+    {
+        ERR_TO_STATUS("Readout speed index could not be set");
+        return asynError;
+    }
+    LOG_ARGS("  Readout speed index set to %d\n", this->cameraContext->speedTable[speedTableIndex].speeds[speedIndex].index);
+
+    if (PV_OK != pl_set_param(this->cameraContext->hcam, PARAM_GAIN_INDEX,
+                (void*)&this->cameraContext->speedTable[speedTableIndex].speeds[speedIndex].gains[gainIndex].index))
+    {
+        ERR_TO_STATUS("Gain index could not be set");
+        return asynError;
+    }
+    LOG_ARGS("  Gain index set to %d\n", this->cameraContext->speedTable[0].speeds[0].gains[0].index);
+    return asynSuccess;
+}
+
+void ADKinetix::printSpeedTable()
+{
+    const char* functionName = "printSpeedTable";
+    if(this->cameraContext->speedTable.empty())
+    {
+        ERR("No speed table read from detector!");
+        return;
+    }
+    // Speed table has been created, print it out
+    printf("  Speed table:\n");
+    for (const auto& port : this->cameraContext->speedTable)
+    {
+        printf("  - port '%s', value %d\n", port.name.c_str(), port.value);
+        for (const auto& speed : port.speeds)
+        {
+            printf("    - speed index %d, running at %f MHz\n",
+                    speed.index, 1000 / (float)speed.pixTimeNs);
+            for (const auto& gain : speed.gains)
+            {
+                printf("      - gain index %d, %sbit-depth %d bpp\n",
+                        gain.index,
+                        (gain.name.empty()) ? "" : ("'" + gain.name + "', ").c_str(),
+                        gain.bitDepth);
+
+            }
+        }
+    }
+    printf("\n");
+}
+
+bool ADKinetix::getSpeedTable()
 {
     const char* functionName = "getSpeedTable";
     std::vector<SpdtabPort> table;
@@ -288,7 +354,7 @@ bool ADKinetix::getSpeedTable(std::vector<SpdtabPort>& speedTable)
         table.push_back(port);
     }
 
-    speedTable.swap(table);
+    this->cameraContext->speedTable.swap(table);
     return true;
 }
 
@@ -399,6 +465,9 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 // Reset any pre-configured post-processing setup.
                 pl_pp_reset(this->cameraContext->hcam);
 
+                getSpeedTable();
+                printSpeedTable();
+
                 if(PV_OK != pl_cam_register_callback_ex3(this->cameraContext->hcam, PL_CALLBACK_EOF, (void*) newFrameCallback, this->cameraContext)){
                     ERR("Failed to register callback function!");
                 } else {
@@ -419,6 +488,8 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
             }
         }
     }
+
+    epicsAtExit(exitCallbackC, (void*) this);
 }
 
 //_____________________________________________________________________________________________

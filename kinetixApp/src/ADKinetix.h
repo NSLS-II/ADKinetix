@@ -53,6 +53,14 @@ static const char *driverName = "ADKinetix";
 
 #define KinetixTemperatureString             "KINETIX_TEMP"
 #define KinetixFanSpeedString                "KINETIX_FAN_SPEED"
+#define KinetixOpModeIdxString          "KINETIX_OP_MODE_IDX"
+#define KinetixOpModeDescString          "KINETIX_OP_MODE_DESC"
+
+#define KinetixSpeedDescSting              "KINETIX_SPEED_DESC"
+#define KinetixSpeedIdxString             "KINETIX_SPEED_IDX"
+#define KinetixGainDescString             "KINETIX_GAIN_DESC"
+#define KinetixGainIdxString             "KINETIX_GAIN_IDX"
+
 
 
 class ADKinetix : public ADDriver
@@ -76,6 +84,12 @@ protected:
     int KinetixTemperature;
     #define FIRST_KINETIX_PARAM KinetixTemperature
     int KinetixFanSpeed;
+    int KinetixOpModeIdx;
+    int KinetixOpModeDesc;
+    int KinetixSpeedIdx;
+    int KinetixSpeedDesc;
+    int KinetixGainIdx;
+    int KinetixGainDesc;
     #define LAST_KINETIX_PARAM KinetixFanSpeed 
 
     
@@ -85,8 +99,10 @@ private:
 
     bool isParamAvailable(int16 hcam, uns32 paramID, const char* paramName);
     bool readEnumeration(int16 hcam, NVPC* pNvpc, uns32 paramID, const char* paramName);
-    bool getSpeedTable(std::vector<SpdtabPort>& speedTable);
+    void printSpeedTable();
+    bool getSpeedTable();
     void updateImageFormat();
+    asynStatus selectSpeedTableMode(int speedTableIndex, int speedIndex, int gainIndex);
 
     asynStatus acquireStart();
     void acquireStop();
