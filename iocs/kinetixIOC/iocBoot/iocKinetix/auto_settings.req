@@ -1,0 +1,3 @@
+file "pvCam_settings.req",  	    P=$(P),  R=pvcam:
+file "NDStdArrays_settings.req",  P=$(P),  R=image:
+file "commonPlugin_settings.req", P=$(P)
