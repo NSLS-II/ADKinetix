@@ -1,3 +1,5 @@
+#!../../bin/linux-x86_64/kinetixApp
+
 errlogInit(20000)
 
 < envPaths
@@ -22,7 +24,7 @@ epicsEnvSet("CBUFFS", "500")
 # The search path for database files
 epicsEnvSet("EPICS_DB_INCLUDE_PATH", "$(ADCORE)/db")
 
-
+ADKinetixConfig(0, "$(PORT)", $(XSIZE), $(YSIZE), 3, 0, 0)
 dbLoadRecords("$(ADKINETIX)/db/kinetix.template", "P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1")
 
 # Create a standard arrays plugin, set it to get data from pvCamera driver.
