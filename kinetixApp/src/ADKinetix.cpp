@@ -416,10 +416,10 @@ void ADKinetix::updateCameraRegion(){
 
     LOG_ARGS("Configured Region: (%d, %d) to (%d, %d) | Binning: (%d, %d)", 
              (int) this->cameraContext->region.s1,
-             (int) this->cameraContext->region.s2,
-             (int) this->cameraContext->region.sbin,
              (int) this->cameraContext->region.p1,
+             (int) this->cameraContext->region.s2,
              (int) this->cameraContext->region.p2,
+             (int) this->cameraContext->region.sbin,
              (int) this->cameraContext->region.pbin)
 }
 
