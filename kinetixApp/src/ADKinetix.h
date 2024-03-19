@@ -53,9 +53,9 @@ static const char *driverName = "ADKinetix";
 
 #define KinetixTemperatureString             "KINETIX_TEMP"
 #define KinetixFanSpeedString                "KINETIX_FAN_SPEED"
+
 #define KinetixOpModeIdxString          "KINETIX_OP_MODE_IDX"
 #define KinetixOpModeDescString          "KINETIX_OP_MODE_DESC"
-
 #define KinetixSpeedDescSting              "KINETIX_SPEED_DESC"
 #define KinetixSpeedIdxString             "KINETIX_SPEED_IDX"
 #define KinetixGainDescString             "KINETIX_GAIN_DESC"

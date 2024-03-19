@@ -210,7 +210,7 @@ void ADKinetix::printSpeedTable()
         printf("  - port '%s', value %d\n", port.name.c_str(), port.value);
         for (const auto& speed : port.speeds)
         {
-            printf("    - speed index %d, running at %f MHz\n",
+            printf("    - speed index %d, running at %f Hz\n",
                     speed.index, 1000 / (float)speed.pixTimeNs);
             for (const auto& gain : speed.gains)
             {
@@ -444,11 +444,10 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 setStringParam(ADFirmwareVersion, fwVersionStr);
 
                 pl_get_param(this->cameraContext->hcam, PARAM_PRODUCT_NAME, ATTR_CURRENT, (void*)modelStr);
-                setStringParam(ADFirmwareVersion, modelStr);
+                setStringParam(ADModel, modelStr);
 
                 pl_get_param(this->cameraContext->hcam, PARAM_SER_SIZE, ATTR_CURRENT, (void*)&this->cameraContext->sensorResX);
                 pl_get_param(this->cameraContext->hcam, PARAM_PAR_SIZE, ATTR_CURRENT, (void*)&this->cameraContext->sensorResY);
-
 
                 setIntegerParam(ADSizeX, this->cameraContext->sensorResX);
                 setIntegerParam(ADSizeY, this->cameraContext->sensorResY);
@@ -467,6 +466,14 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
 
                 getSpeedTable();
                 printSpeedTable();
+
+                LOG_ARGS("Setting readout port to %s...", this->cameraContext->speedTable[0].name.c_str());
+                pl_set_param(this->cameraContext->hcam, PARAM_READOUT_PORT, (void*) &this->cameraContext->speedTable[0].value);
+                LOG_ARGS("Setting readout speed index to %d...", this->cameraContext->speedTable[0].speeds[0].index);
+                pl_set_param(this->cameraContext->hcam, PARAM_SPDTAB_INDEX, (void*) &this->cameraContext->speedTable[0].speeds[0].index);
+                LOG_ARGS("Setting gain index to %d...", this->cameraContext->speedTable[0].speeds[0].gains[0].index);
+                pl_set_param(this->cameraContext->hcam, PARAM_GAIN_INDEX, (void*) &this->cameraContext->speedTable[0].speeds[0].gains[0].index);
+
 
                 if(PV_OK != pl_cam_register_callback_ex3(this->cameraContext->hcam, PL_CALLBACK_EOF, (void*) newFrameCallback, this->cameraContext)){
                     ERR("Failed to register callback function!");
