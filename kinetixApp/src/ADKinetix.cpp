@@ -407,12 +407,12 @@ void ADKinetix::updateCameraRegion(){
     getIntegerParam(ADBinX, &regionStopX);
     getIntegerParam(ADBinY, &regionStopX);
 
-    this->cameraContext->region.s1 = regionStartX;
-    this->cameraContext->region.s2 = regionStopX - 1;
-    this->cameraContext->region.sbin = binX;
-    this->cameraContext->region.p1 = regionStartY;
-    this->cameraContext->region.p2 = regionStopY - 1;
-    this->cameraContext->region.pbin = binY;
+    this->cameraContext->region.s1 = (uns16) regionStartX;
+    this->cameraContext->region.s2 = (uns16) regionStopX - 1;
+    this->cameraContext->region.sbin = (uns16) binX;
+    this->cameraContext->region.p1 = (uns16) regionStartY;
+    this->cameraContext->region.p2 = (uns16) regionStopY - 1;
+    this->cameraContext->region.pbin = (uns16) binY;
 
     LOG_ARGS("Configured Region: (%d, %d) to (%d, %d) | Binning: (%d, %d)", 
              (int) this->cameraContext->region.s1,
@@ -492,6 +492,7 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 LOG("Configuring default region to full sensor size...");
                 setIntegerParam(ADSizeX, this->cameraContext->sensorResX);
                 setIntegerParam(ADSizeY, this->cameraContext->sensorResY);
+                callParamCallbacks();
                 updateCameraRegion();
 
 
