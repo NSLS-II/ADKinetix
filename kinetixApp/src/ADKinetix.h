@@ -54,12 +54,12 @@ static const char *driverName = "ADKinetix";
 #define KinetixTemperatureString             "KINETIX_TEMP"
 #define KinetixFanSpeedString                "KINETIX_FAN_SPEED"
 
-#define KinetixOpModeIdxString          "KINETIX_OP_MODE_IDX"
-#define KinetixOpModeDescString          "KINETIX_OP_MODE_DESC"
-#define KinetixSpeedDescSting              "KINETIX_SPEED_DESC"
+#define KinetixReadoutPortIdxString          "KINETIX_READOUT_PORT_IDX"
+#define KinetixReadoutPortString          "KINETIX_READOUT_PORT"
 #define KinetixSpeedIdxString             "KINETIX_SPEED_IDX"
-#define KinetixGainDescString             "KINETIX_GAIN_DESC"
+#define KinetixSpeedString              "KINETIX_SPEED"
 #define KinetixGainIdxString             "KINETIX_GAIN_IDX"
+#define KinetixGainDescString             "KINETIX_GAIN_DESC"
 
 
 
@@ -83,14 +83,13 @@ public:
 protected:
     int KinetixTemperature;
     #define FIRST_KINETIX_PARAM KinetixTemperature
-    int KinetixFanSpeed;
-    int KinetixOpModeIdx;
-    int KinetixOpModeDesc;
+    int KinetixReadoutPortIdx;
+    int KinetixReadoutPort;
     int KinetixSpeedIdx;
-    int KinetixSpeedDesc;
+    int KinetixSpeed;
     int KinetixGainIdx;
     int KinetixGainDesc;
-    #define LAST_KINETIX_PARAM KinetixFanSpeed 
+    #define LAST_KINETIX_PARAM KinetixGainDesc 
 
     
 
@@ -108,8 +107,10 @@ private:
     void acquireStop();
     void updateCameraRegion();
 
+
     CameraContext* cameraContext; 
-    bool alive = false;
+    bool acquisitionActive = false;
+    bool monitoringActive = false;
     int deviceIndex;
     void* frameBuffer;
     epicsThreadId monitorThreadId, acquisitionThreadId;

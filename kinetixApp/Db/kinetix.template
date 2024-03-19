@@ -7,17 +7,121 @@ record(ai, "$(P)$(R)Temperature_RBV")
    field(SCAN, "1 second")
 }
 
-record(mbbo, "$(P)$(R)FanSpeed")
+
+
+record(mbbo, "$(P)$(R)ReadoutPortIdx")
 {
    field(DTYP, "asynInt32")
-   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_FAN_SPEED")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_READOUT_PORT_IDX")
+   field(ZRST, "Readout Port 1")
+   field(ZRVL, "0")
+   field(ONST, "Readout Port 2")
+   field(ONVL, "1")
+   field(TWST, "Readout Port 3")
+   field(TWVL, "2")
+   field(THST, "Readout Port 4")
+   field(THVL, "3")
+   field(VAL, 0)
    field(SCAN, "I/O Intr")
 }
 
 
-record(mbbi, "$(P)$(R)FanSpeed_RBV")
+record(mbbi, "$(P)$(R)ReadoutPortIdx_RBV")
 {
    field(DTYP, "asynInt32")
-   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_FAN_SPEED")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_READOUT_PORT_IDX")
+   field(ZRST, "Readout Port 1")
+   field(ZRVL, "0")
+   field(ONST, "Readout Port 2")
+   field(ONVL, "1")
+   field(TWST, "Readout Port 3")
+   field(TWVL, "2")
+   field(THST, "Readout Port 4")
+   field(THVL, "3")
+   field(SCAN, "I/O Intr")
+}
+
+record(stringout, "$(P)$(R)ReadoutPort_RBV"){
+   field(DTYP, "asynOctet")
+   field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_READOUT_PORT")
+   field(SCAN, "I/O Intr")
+}
+
+
+
+record(mbbo, "$(P)$(R)SpeedIdx")
+{
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_SPEED_IDX")
+   field(ZRST, "Speed Index 1")
+   field(ZRVL, "0")
+   field(ONST, "Speed Index 2")
+   field(ONVL, "1")
+   field(TWST, "Speed Index 3")
+   field(TWVL, "2")
+   field(THST, "Speed Index 4")
+   field(THVL, "3")
+   field(VAL, 0)
+   field(SCAN, "I/O Intr")
+}
+
+
+record(mbbi, "$(P)$(R)SpeedIdx_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_SPEED_IDX")
+   field(ZRST, "Speed Index 1")
+   field(ZRVL, "0")
+   field(ONST, "Speed Index 2")
+   field(ONVL, "1")
+   field(TWST, "Speed Index 3")
+   field(TWVL, "2")
+   field(THST, "Speed Index 4")
+   field(THVL, "3")
+   field(SCAN, "I/O Intr")
+}
+
+record(stringout, "$(P)$(R)Speed_RBV"){
+   field(DTYP, "asynOctet")
+   field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_SPEED")
+   field(SCAN, "I/O Intr")
+}
+
+
+
+record(mbbo, "$(P)$(R)GainIdx")
+{
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_GAIN_IDX")
+   field(ZRST, "Gain Index 1")
+   field(ZRVL, "0")
+   field(ONST, "Gain Index 2")
+   field(ONVL, "1")
+   field(TWST, "Gain Index 3")
+   field(TWVL, "2")
+   field(THST, "Gain Index 4")
+   field(THVL, "3")
+   field(VAL, 0)
+   field(SCAN, "I/O Intr")
+}
+
+record(mbbi, "$(P)$(R)GainIdx_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_GAIN_IDX")
+   field(ZRST, "Gain Index 1")
+   field(ZRVL, "0")
+   field(ONST, "Gain Index 2")
+   field(ONVL, "1")
+   field(TWST, "Gain Index 3")
+   field(TWVL, "2")
+   field(THST, "Gain Index 4")
+   field(THVL, "3")
+   field(SCAN, "I/O Intr")
+}
+
+record(stringout, "$(P)$(R)GainDesc_RBV"){
+   field(DTYP, "asynOctet")
+   field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_GAIN_DESC")
    field(SCAN, "I/O Intr")
 }

@@ -175,7 +175,9 @@ asynStatus ADKinetix::selectSpeedTableMode(int speedTableIndex, int speedIndex, 
         ERR_TO_STATUS("Readout port could not be set");
         return asynError;
     }
-    LOG_ARGS("  Readout port set to '%s'\n", this->cameraContext->speedTable[speedTableIndex].name.c_str());
+    const char* readoutPortName = this->cameraContext->speedTable[speedTableIndex].name.c_str();
+    setStringParam(KinetixReadoutPort, readoutPortName);
+    LOG_ARGS("Readout port set to '%s'\n", readoutPortName);
 
     if (PV_OK != pl_set_param(this->cameraContext->hcam, PARAM_SPDTAB_INDEX,
                 (void*)&this->cameraContext->speedTable[speedTableIndex].speeds[0].index))
@@ -183,7 +185,7 @@ asynStatus ADKinetix::selectSpeedTableMode(int speedTableIndex, int speedIndex, 
         ERR_TO_STATUS("Readout speed index could not be set");
         return asynError;
     }
-    LOG_ARGS("  Readout speed index set to %d\n", this->cameraContext->speedTable[speedTableIndex].speeds[speedIndex].index);
+    LOG_ARGS("Readout speed index set to %d\n", this->cameraContext->speedTable[speedTableIndex].speeds[speedIndex].index);
 
     if (PV_OK != pl_set_param(this->cameraContext->hcam, PARAM_GAIN_INDEX,
                 (void*)&this->cameraContext->speedTable[speedTableIndex].speeds[speedIndex].gains[gainIndex].index))
@@ -191,7 +193,8 @@ asynStatus ADKinetix::selectSpeedTableMode(int speedTableIndex, int speedIndex, 
         ERR_TO_STATUS("Gain index could not be set");
         return asynError;
     }
-    LOG_ARGS("  Gain index set to %d\n", this->cameraContext->speedTable[0].speeds[0].gains[0].index);
+    LOG_ARGS("Gain index set to %d\n", this->cameraContext->speedTable[0].speeds[0].gains[0].index);
+    callParamCallbacks();
     return asynSuccess;
 }
 
@@ -428,11 +431,16 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
     : ADDriver(portName, 1, NUM_KINETIX_PARAMS, maxBuffers, maxMemory, 0, 0, 0, 1, priority, stackSize)
 {
     const char *functionName = "ADKinetix";
-    int status = asynSuccess;
+    asynStatus status = asynSuccess;
 
     createParam(KinetixTemperatureString,             asynParamFloat64,   &KinetixTemperature);
-    createParam(KinetixFanSpeedString,                 asynParamInt32,   &KinetixFanSpeed);
-    
+    //createParam(KinetixFanSpeedString,                 asynParamInt32,   &KinetixFanSpeed);
+    createParam(KinetixReadoutPortString,             asynParamOctet,   &KinetixReadoutPort);
+    createParam(KinetixReadoutPortIdxString,             asynParamInt32,   &KinetixReadoutPortIdx);
+    createParam(KinetixSpeedString,             asynParamOctet,   &KinetixSpeed);
+    createParam(KinetixSpeedIdxString,             asynParamInt32,   &KinetixSpeedIdx);
+    createParam(KinetixGainDescString,             asynParamOctet,   &KinetixGainDesc);
+    createParam(KinetixGainIdxString,             asynParamInt32,   &KinetixGainIdx);
 
     if (!pl_pvcam_init ())
     {
@@ -506,20 +514,15 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 getSpeedTable();
                 printSpeedTable();
 
-                LOG_ARGS("Setting readout port to %s...", this->cameraContext->speedTable[0].name.c_str());
-                pl_set_param(this->cameraContext->hcam, PARAM_READOUT_PORT, (void*) &this->cameraContext->speedTable[0].value);
-                LOG_ARGS("Setting readout speed index to %d...", this->cameraContext->speedTable[0].speeds[0].index);
-                pl_set_param(this->cameraContext->hcam, PARAM_SPDTAB_INDEX, (void*) &this->cameraContext->speedTable[0].speeds[0].index);
-                LOG_ARGS("Setting gain index to %d...", this->cameraContext->speedTable[0].speeds[0].gains[0].index);
-                pl_set_param(this->cameraContext->hcam, PARAM_GAIN_INDEX, (void*) &this->cameraContext->speedTable[0].speeds[0].gains[0].index);
+                status = selectSpeedTableMode(0, 0, 0);
 
 
                 if(PV_OK != pl_cam_register_callback_ex3(this->cameraContext->hcam, PL_CALLBACK_EOF, (void*) newFrameCallback, this->cameraContext)){
                     ERR("Failed to register callback function!");
                 } else {
-                    LOG("Registered callback function.");
+                    LOG("Registered EOF callback function.");
                     callParamCallbacks();
-                    this->alive = true;
+                    this->monitoringActive = true;
 
                     LOG("Spawning camera monitor thread...");
                     epicsThreadOpts opts;
@@ -529,7 +532,6 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
 
                     // Spawn the acquisition thread. Make sure it's joinable.
                     this->monitorThreadId = epicsThreadCreateOpt("acquisitionThread", (EPICSTHREADFUNC) monitorThreadC, this, &opts);
-                    LOG("Monitor thread active.");
                 }
             }
         }
@@ -548,9 +550,10 @@ void ADKinetix::monitorThread()
     const char* functionName = "monitorThread";
     int acquiring;
 
-    while(this->alive){
-        getIntegerParam(ADAcquire, &acquiring);
-        if(!acquiring) {
+    LOG("Monitor thread active.");
+
+    while(this->monitoringActive){
+        if(!this->acquisitionActive) {
 
         }
         callParamCallbacks();
@@ -567,6 +570,7 @@ asynStatus ADKinetix::acquireStart()
     opts.stackSize = epicsThreadGetStackSize(epicsThreadStackMedium);
     opts.joinable = 1;
 
+    LOG("Spawning main acquisition thread...");
     // Spawn the acquisition thread. Make sure it's joinable.
     this->acquisitionThreadId = epicsThreadCreateOpt("acquisitionThread", (EPICSTHREADFUNC) acquisitionThreadC, this, &opts);
 }
@@ -574,11 +578,15 @@ asynStatus ADKinetix::acquireStart()
 void ADKinetix::acquireStop()
 {
     const char* functionName = "acquireStop";
-
-    setIntegerParam(ADAcquire, 0);
-    epicsThreadMustJoin(this->acquisitionThreadId);
-    LOG("Acquisition stopped.");
-    callParamCallbacks();
+    if(this->acquisitionActive) {
+        pl_exp_abort(this->cameraContext->hcam, CCS_HALT);
+        this->acquisitionActive = false;
+        setIntegerParam(ADAcquire, 0);
+        LOG("Waiting for acquisition thread to join...");
+        epicsThreadMustJoin(this->acquisitionThreadId);
+        LOG("Acquisition stopped.");
+        callParamCallbacks();
+    }
 }
 
 void ADKinetix::acquisitionThread()
@@ -601,7 +609,7 @@ void ADKinetix::acquisitionThread()
     uns32 frameBufferSize;
     const int16 circBuffMode = CIRC_OVERWRITE;
 
-    getIntegerParam(ADAcquire, &acquiring);
+    LOG("Acquisition thread active.");
 
     if(acquisitionMode == ADImageSingle){
         pl_exp_setup_seq(this->cameraContext->hcam, 1, 1, &this->cameraContext->region, pvcamExposureMode, (uns32) (exposureTime * 1000), &frameBufferSize);
@@ -611,8 +619,10 @@ void ADKinetix::acquisitionThread()
 
         this->frameBuffer = (uns8*) calloc(1, (size_t) frameBufferSize);
 
-        if(PV_OK != pl_exp_start_seq(this->cameraContext->hcam, this->frameBuffer))
+        if(PV_OK != pl_exp_start_seq(this->cameraContext->hcam, this->frameBuffer)) {
             ERR_TO_STATUS("pl_exp_start_seq");
+            this->acquisitionActive = false;
+        }
 
     } else {
         pl_exp_setup_cont(this->cameraContext->hcam, 1, &this->cameraContext->region, pvcamExposureMode, (uns32) (exposureTime * 1000), &frameBufferSize, circBuffMode);
@@ -622,37 +632,40 @@ void ADKinetix::acquisitionThread()
 
         this->frameBuffer = (uns8*) calloc(KINETIX_CIRC_BUFF_SIZE, (size_t) frameBufferSize); // Allocate memory for circular buffer
 
-        if(PV_OK != pl_exp_start_cont(this->cameraContext->hcam, this->frameBuffer, KINETIX_CIRC_BUFF_SIZE * frameBufferSize))
+        if(PV_OK != pl_exp_start_cont(this->cameraContext->hcam, this->frameBuffer, KINETIX_CIRC_BUFF_SIZE * frameBufferSize)) {
             ERR_TO_STATUS("pl_exp_start_cont");
+            this->acquisitionActive = false;
+        }
     }
 
-    while(acquiring){
+    while(acquisitionActive){
 
         getIntegerParam(ADNumImagesCounter, &collectedImages);
 
         eofSuccess = this->waitForEofEvent((uns32) 5000);
         if(eofSuccess){
             // New frame successfully collected.
-
             setIntegerParam(ADNumImagesCounter, collectedImages + 1);
+            LOG_ARGS("Recieved frame #%d", collectedImages + 1);
+
+            // TODO: convert frame data into NDArray
+            
+            if(acquisitionMode == ADImageSingle){
+                pl_exp_finish_seq(this->cameraContext->hcam, this->frameBuffer, 0);
+                this->acquisitionActive = false;
+            } else if(acquisitionMode == ADImageMultiple && collectedImages == targetNumImages) {
+                pl_exp_abort(this->cameraContext->hcam, CCS_HALT);
+                this->acquisitionActive = false;
+            }
         } else {
             ERR("Failed to register EOF Event before timeout expired!");
+            this->acquisitionActive = false;
         }
-
-
-        if(acquisitionMode == ADImageSingle){
-            pl_exp_finish_seq(this->cameraContext->hcam, this->frameBuffer, 0);
-            setIntegerParam(ADAcquire, 0);
-        } else if(acquisitionMode == ADImageMultiple && collectedImages == targetNumImages) {
-            pl_exp_abort(this->cameraContext->hcam, CCS_HALT);
-            setIntegerParam(ADAcquire, 0);
-        }
-
-        getIntegerParam(ADAcquire, &acquiring);
     }
 
     free(this->frameBuffer);
     setIntegerParam(ADStatusAcquire, ADStatusIdle);
+    setIntegerParam(ADAcquire, 0);
     callParamCallbacks();
 }
 
@@ -662,13 +675,23 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value)
 {
     const char *functionName = "writeInt32";
     int function = pasynUser->reason;
-    int detectorStatus;
     asynStatus status = asynSuccess;
 
     /* Set the parameter and readback in the parameter library.  This may be overwritten when we read back the
      * status at the end, but that's OK */
     status = setIntegerParam(function, value);
 
+    if(function ==  ADAcquire){
+        if(this->acquisitionActive && value == 0) {
+            this->acquireStop();
+        } else if(!this->acquisitionActive && value == 1) {
+            this->acquireStart();
+        } else if(value == 0){
+            ERR("Acquisition not active!");
+        } else {
+            ERR("Acquisition already active!");
+        }
+    }
 
 
     /* Do callbacks so higher layers see any changes */
@@ -745,7 +768,7 @@ ADKinetix::~ADKinetix()
     this->acquireStop();
 
     // shut down separate threads
-    this->alive = false;
+    this->monitoringActive = false;
     printf("Shutting down monitor thread...\n");
     epicsThreadMustJoin(this->monitorThreadId);
 
