@@ -9,7 +9,7 @@ record(ai, "$(P)$(R)Temperature_RBV")
 
 record(mbbo, "$(P)$(R)FanSpeed")
 {
-   field(DTYP, "asynFloat64")
+   field(DTYP, "asynInt32")
    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_FAN_SPEED")
    field(SCAN, "I/O Intr")
 }
