@@ -396,6 +396,8 @@ static void PV_DECL newFrameCallback(FRAME_INFO* pFrameInfo, CameraContext* ctx)
 }
 
 void ADKinetix::updateCameraRegion(){
+    const char* functionName = "updateCameraRegion";
+
     int regionStartX, regionStartY, regionStopX, regionStopY, binX, binY;
 
     getIntegerParam(ADMinX, &regionStartX);
