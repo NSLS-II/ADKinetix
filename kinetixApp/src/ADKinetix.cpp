@@ -395,6 +395,32 @@ static void PV_DECL newFrameCallback(FRAME_INFO* pFrameInfo, CameraContext* ctx)
     ctx->eofEvent.cond.notify_all();
 }
 
+void ADKinetix::updateCameraRegion(){
+    int regionStartX, regionStartY, regionStopX, regionStopY, binX, binY;
+
+    getIntegerParam(ADMinX, &regionStartX);
+    getIntegerParam(ADSizeX, &regionStopX);
+    getIntegerParam(ADMinY, &regionStopX);
+    getIntegerParam(ADSizeY, &regionStopX);
+    getIntegerParam(ADBinX, &regionStopX);
+    getIntegerParam(ADBinY, &regionStopX);
+
+    this->cameraContext->region.s1 = regionStartX;
+    this->cameraContext->region.s2 = regionStopX - 1;
+    this->cameraContext->region.sbin = binX;
+    this->cameraContext->region.p1 = regionStartY;
+    this->cameraContext->region.p2 = regionStopY - 1;
+    this->cameraContext->region.pbin = binY;
+
+    LOG_ARGS("Configured Region: (%d, %d) to (%d, %d) | Binning: (%d, %d)", 
+             (int) this->cameraContext->region.s1,
+             (int) this->cameraContext->region.s2,
+             (int) this->cameraContext->region.sbin,
+             (int) this->cameraContext->region.p1,
+             (int) this->cameraContext->region.p2,
+             (int) this->cameraContext->region.pbin)
+}
+
 
 ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int maxSizeY, NDDataType_t dataType, int maxBuffers, size_t maxMemory, int priority, int stackSize)
     : ADDriver(portName, 1, NUM_KINETIX_PARAMS, maxBuffers, maxMemory, 0, 0, 0, 1, priority, stackSize)
@@ -413,8 +439,9 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
     }
 
     uns16 sdkVersion;
+    int32 serialNumber;
     pl_pvcam_get_ver(&sdkVersion);
-    char sdkVersionStr[40], fwVersionStr[40], modelStr[40];
+    char sdkVersionStr[40], fwVersionStr[40], modelStr[40], vendorStr[40], serialNumberStr[40];
     snprintf(sdkVersionStr, 40, "%d.%d.%d", (sdkVersion >> 8 & 0xFF), (sdkVersion >> 4 & 0xF), (sdkVersion >> 0 & 0xF));
     setStringParam(ADSDKVersion, sdkVersionStr);
 
@@ -440,8 +467,15 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 // Camera is opened, collect model information
                 uns16 fwVersion;
                 pl_get_param(this->cameraContext->hcam, PARAM_CAM_FW_VERSION, ATTR_CURRENT, (void*)&fwVersion);
-                snprintf(fwVersionStr, 40, "%d.%d\n", (fwVersion >> 8) & 0xFF, (fwVersion >> 0) & 0xFF);
+                snprintf(fwVersionStr, 40, "%d.%d", (fwVersion >> 8) & 0xFF, (fwVersion >> 0) & 0xFF);
                 setStringParam(ADFirmwareVersion, fwVersionStr);
+
+                pl_get_param(this->cameraContext->hcam, PARAM_CAMERA_PART_NUMBER, ATTR_CURRENT, (void*) &serialNumber);
+                snprintf(serialNumberStr, 40, "%d", serialNumber);
+                setStringParam(ADSerialNumber, serialNumberStr);
+
+                pl_get_param(this->cameraContext->hcam, PARAM_VENDOR_NAME, ATTR_CURRENT, (void*)vendorStr);
+                setStringParam(ADManufacturer, vendorStr);
 
                 pl_get_param(this->cameraContext->hcam, PARAM_PRODUCT_NAME, ATTR_CURRENT, (void*)modelStr);
                 setStringParam(ADModel, modelStr);
@@ -449,17 +483,15 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 pl_get_param(this->cameraContext->hcam, PARAM_SER_SIZE, ATTR_CURRENT, (void*)&this->cameraContext->sensorResX);
                 pl_get_param(this->cameraContext->hcam, PARAM_PAR_SIZE, ATTR_CURRENT, (void*)&this->cameraContext->sensorResY);
 
-                setIntegerParam(ADSizeX, this->cameraContext->sensorResX);
-                setIntegerParam(ADSizeY, this->cameraContext->sensorResY);
+                setIntegerParam(ADMaxSizeX, this->cameraContext->sensorResX);
+                setIntegerParam(ADMaxSizeY, this->cameraContext->sensorResX);
                 LOG_ARGS("Model: %s | Resolution: %dx%d", modelStr, this->cameraContext->sensorResX, this->cameraContext->sensorResY);
 
                 LOG("Configuring default region to full sensor size...");
-                this->cameraContext->region.s1 = 0;
-                this->cameraContext->region.s2 = this->cameraContext->sensorResX - 1;
-                this->cameraContext->region.sbin = 1;
-                this->cameraContext->region.p1 = 0;
-                this->cameraContext->region.p2 = this->cameraContext->sensorResY - 1;
-                this->cameraContext->region.pbin = 1;
+                setIntegerParam(ADSizeX, this->cameraContext->sensorResX);
+                setIntegerParam(ADSizeY, this->cameraContext->sensorResY);
+                updateCameraRegion();
+
 
                 // Reset any pre-configured post-processing setup.
                 pl_pp_reset(this->cameraContext->hcam);

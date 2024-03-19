@@ -106,6 +106,7 @@ private:
 
     asynStatus acquireStart();
     void acquireStop();
+    void updateCameraRegion();
 
     CameraContext* cameraContext; 
     bool alive = false;
