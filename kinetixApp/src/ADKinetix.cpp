@@ -402,10 +402,10 @@ void ADKinetix::updateCameraRegion(){
 
     getIntegerParam(ADMinX, &regionStartX);
     getIntegerParam(ADSizeX, &regionStopX);
-    getIntegerParam(ADMinY, &regionStopX);
-    getIntegerParam(ADSizeY, &regionStopX);
-    getIntegerParam(ADBinX, &regionStopX);
-    getIntegerParam(ADBinY, &regionStopX);
+    getIntegerParam(ADMinY, &regionStartY);
+    getIntegerParam(ADSizeY, &regionStopY);
+    getIntegerParam(ADBinX, &binX);
+    getIntegerParam(ADBinY, &binY);
 
     this->cameraContext->region.s1 = (uns16) regionStartX;
     this->cameraContext->region.s2 = (uns16) regionStopX - 1;
@@ -490,6 +490,10 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 LOG_ARGS("Model: %s | Resolution: %dx%d", modelStr, this->cameraContext->sensorResX, this->cameraContext->sensorResY);
 
                 LOG("Configuring default region to full sensor size...");
+                setIntegerParam(ADMinX, 0);
+                setIntegerParam(ADMinY, 0);
+                setIntegerParam(ADBinX, 1);
+                setIntegerParam(ADBinY, 1);
                 setIntegerParam(ADSizeX, this->cameraContext->sensorResX);
                 setIntegerParam(ADSizeY, this->cameraContext->sensorResY);
                 callParamCallbacks();
