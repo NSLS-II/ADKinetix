@@ -609,6 +609,7 @@ void ADKinetix::acquisitionThread()
     uns32 frameBufferSize;
     const int16 circBuffMode = CIRC_OVERWRITE;
 
+    this->acquisitionActive = true;
     LOG("Acquisition thread active.");
 
     if(acquisitionMode == ADImageSingle){
