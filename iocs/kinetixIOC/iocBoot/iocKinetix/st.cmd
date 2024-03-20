@@ -1,5 +1,7 @@
 #!../../bin/linux-x86_64/kinetixApp
 
+< /epics/common/xf31id1-lab3-ioc1-netsetup.cmd
+
 errlogInit(20000)
 
 < envPaths
@@ -8,7 +10,7 @@ dbLoadDatabase("$(TOP)/dbd/kinetixApp.dbd")
 kinetixApp_registerRecordDeviceDriver(pdbbase)
 
 # Prefix for all records
-epicsEnvSet("PREFIX", "XF:31ID1-ES{Det-Kinetix:1}")
+epicsEnvSet("PREFIX", "XF:31ID1-ES{Kinetix-Det:1}")
 # The port name for the detector
 epicsEnvSet("PORT",   "KTX")
 # The queue size for all plugins

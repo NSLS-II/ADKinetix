@@ -103,7 +103,7 @@ private:
     void updateImageFormat();
     asynStatus selectSpeedTableMode(int speedTableIndex, int speedIndex, int gainIndex);
 
-    asynStatus acquireStart();
+    void acquireStart();
     void acquireStop();
     void updateCameraRegion();
 

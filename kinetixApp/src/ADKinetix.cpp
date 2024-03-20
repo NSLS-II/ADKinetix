@@ -14,10 +14,10 @@
 #define ERR_TO_STATUS(pvcamFunc) reportKinetixError(functionName, pvcamFunc);
 
 // Flow message formatters
-#define LOG(msg) asynPrint(pasynUserSelf, ASYN_TRACE_FLOW, "%s::%s: %s\n", \
+#define LOG(msg) asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s::%s: %s\n", \
     driverName, functionName, msg)
 
-#define LOG_ARGS(fmt,...) asynPrint(pasynUserSelf, ASYN_TRACE_FLOW, \
+#define LOG_ARGS(fmt,...) asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, \
     "%s::%s: " fmt "\n", driverName, functionName, __VA_ARGS__);
 
 
@@ -561,7 +561,7 @@ void ADKinetix::monitorThread()
     }
 }
 
-asynStatus ADKinetix::acquireStart()
+void ADKinetix::acquireStart()
 {
     const char* functionName = "acquireStart";
 
@@ -675,16 +675,18 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value)
 {
     const char *functionName = "writeInt32";
     int function = pasynUser->reason;
+    int detectorStatus;
     asynStatus status = asynSuccess;
 
     /* Set the parameter and readback in the parameter library.  This may be overwritten when we read back the
      * status at the end, but that's OK */
     status = setIntegerParam(function, value);
+    getIntegerParam(ADStatusAcquire, &detectorStatus);
 
     if(function ==  ADAcquire){
-        if(this->acquisitionActive && value == 0) {
+        if(detectorStatus == ADStatusAcquire && value == 0) {
             this->acquireStop();
-        } else if(!this->acquisitionActive && value == 1) {
+        } else if(detectorStatus == ADStatusIdle && value == 1) {
             this->acquireStart();
         } else if(value == 0){
             ERR("Acquisition not active!");
