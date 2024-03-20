@@ -566,8 +566,8 @@ void ADKinetix::acquireStart()
     const char* functionName = "acquireStart";
 
     epicsThreadOpts opts;
-    opts.priority = epicsThreadPriorityMedium;
-    opts.stackSize = epicsThreadGetStackSize(epicsThreadStackMedium);
+    opts.priority = epicsThreadPriorityHigh;
+    opts.stackSize = epicsThreadGetStackSize(epicsThreadStackBig);
     opts.joinable = 1;
 
     LOG("Spawning main acquisition thread...");
@@ -612,6 +612,10 @@ void ADKinetix::acquisitionThread()
     this->acquisitionActive = true;
     LOG("Acquisition thread active.");
 
+    LOG("Resetting image counter...");
+    setIntegerParam(ADNumImagesCounter, 0);
+    callParamCallbacks();
+
     if(acquisitionMode == ADImageSingle){
         pl_exp_setup_seq(this->cameraContext->hcam, 1, 1, &this->cameraContext->region, pvcamExposureMode, (uns32) (exposureTime * 1000), &frameBufferSize);
         
@@ -648,9 +652,10 @@ void ADKinetix::acquisitionThread()
         LOG("Waiting for next frame...");
         eofSuccess = this->waitForEofEvent((uns32) 5000);
         if(eofSuccess){
+            collectedImages += 1;
             // New frame successfully collected.
-            setIntegerParam(ADNumImagesCounter, collectedImages + 1);
-            LOG_ARGS("Recieved frame #%d.", collectedImages + 1);
+            setIntegerParam(ADNumImagesCounter, collectedImages);
+            LOG_ARGS("Readout frame #%d, in %d", collectedImages, this->cameraContext->eofFrameInfo.ReadoutTime);
 
             // TODO: convert frame data into NDArray
             
@@ -668,7 +673,8 @@ void ADKinetix::acquisitionThread()
     }
 
     LOG("Acquisition done.");
-    free(this->frameBuffer);
+    if(this->frameBuffer != nullptr)
+        free(this->frameBuffer);
     setIntegerParam(ADStatusAcquire, ADStatusIdle);
     setIntegerParam(ADAcquire, 0);
     callParamCallbacks();
@@ -685,7 +691,6 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value)
 
     /* Set the parameter and readback in the parameter library.  This may be overwritten when we read back the
      * status at the end, but that's OK */
-    status = setIntegerParam(function, value);
     getIntegerParam(ADStatusAcquire, &detectorStatus);
 
     if(function ==  ADAcquire){
@@ -699,6 +704,8 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value)
             ERR("Acquisition already active!");
         }
     }
+
+    status = setIntegerParam(function, value);
 
 
     /* Do callbacks so higher layers see any changes */
