@@ -213,7 +213,7 @@ void ADKinetix::printSpeedTable()
         printf("  - port '%s', value %d\n", port.name.c_str(), port.value);
         for (const auto& speed : port.speeds)
         {
-            printf("    - speed index %d, running at %f Hz\n",
+            printf("    - speed index %d, running at %f MHz\n",
                     speed.index, 1000 / (float)speed.pixTimeNs);
             for (const auto& gain : speed.gains)
             {
@@ -426,6 +426,11 @@ void ADKinetix::updateCameraRegion(){
              (int) this->cameraContext->region.pbin)
 }
 
+void ADKinetix::getCurrentFrameDimensions(size_t* dims){
+    dims[0] = (size_t) ((this->cameraContext->region.s2 - this->cameraContext->region.s1 + 1) / this->cameraContext->region.sbin);
+    dims[1] = (size_t) ((this->cameraContext->region.p2 - this->cameraContext->region.p1 + 1) / this->cameraContext->region.pbin);
+}
+
 
 ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int maxSizeY, NDDataType_t dataType, int maxBuffers, size_t maxMemory, int priority, int stackSize)
     : ADDriver(portName, 1, NUM_KINETIX_PARAMS, maxBuffers, maxMemory, 0, 0, 0, 1, priority, stackSize)
@@ -580,6 +585,8 @@ void ADKinetix::acquireStart()
 void ADKinetix::acquireStop()
 {
     const char* functionName = "acquireStop";
+
+    int acquisitionMode;
     if(this->acquisitionActive) {
         pl_exp_abort(this->cameraContext->hcam, CCS_HALT);
         this->acquisitionActive = false;
@@ -591,6 +598,16 @@ void ADKinetix::acquireStop()
     }
 }
 
+NDDataType_t ADKinetix::getCurrentNDBitDepth(){
+    NDDataType_t dataType = NDUInt8;
+    if(this->cameraContext->speedTable[0].speeds[0].gains[1].bitDepth != 8)
+    {
+        dataType = NDUInt16;
+    }
+    return dataType;
+}
+
+
 void ADKinetix::acquisitionThread()
 {
     const char* functionName = "acquisitionThread";
@@ -598,6 +615,27 @@ void ADKinetix::acquisitionThread()
     bool eofSuccess;
     double exposureTime;
     int16 pvcamExposureMode;
+    NDArray* pArray;
+    NDArrayInfo arrayInfo;
+    size_t dims[2];
+    NDColorMode_t colorMode = NDColorModeMono; // only grayscale at the moment
+    NDDataType_t dataType = getCurrentNDBitDepth();
+    getCurrentFrameDimensions(dims);
+
+    // Allocate the NDArray once at the start of each acquisition start.
+    this->pArrays[0] = pNDArrayPool->alloc(2, dims, dataType, 0, NULL);
+    if(this->pArrays[0]!=NULL){ 
+        pArray = this->pArrays[0];
+    }
+    else{
+        this->pArrays[0]->release();
+        ERR("Failed to allocate array!");
+        setIntegerParam(ADStatusAcquire, ADStatusError);
+        setIntegerParam(ADAcquire, 0);
+        callParamCallbacks();
+        return;
+    }
+
     getDoubleParam(ADAcquireTime, &exposureTime);
     getIntegerParam(ADTriggerMode, &triggerMode);
     getIntegerParam(ADImageMode, &acquisitionMode);
@@ -620,9 +658,6 @@ void ADKinetix::acquisitionThread()
 
     if(acquisitionMode == ADImageSingle){
         pl_exp_setup_seq(this->cameraContext->hcam, 1, 1, &this->cameraContext->region, pvcamExposureMode, (uns32) (exposureTime * 1000), &frameBufferSize);
-        
-        if(this->frameBuffer != nullptr)
-            free(this->frameBuffer);
 
         this->frameBuffer = (uns8*) calloc(1, (size_t) frameBufferSize);
         LOG_ARGS("Allocated frame buffer of size %d...", frameBufferSize);
@@ -634,9 +669,6 @@ void ADKinetix::acquisitionThread()
 
     } else {
         pl_exp_setup_cont(this->cameraContext->hcam, 1, &this->cameraContext->region, pvcamExposureMode, (uns32) (exposureTime * 1000), &frameBufferSize, circBuffMode);
-        
-        if(this->frameBuffer != nullptr)
-            free(this->frameBuffer);
 
         this->frameBuffer = (uns8*) calloc(KINETIX_CIRC_BUFF_SIZE, (size_t) frameBufferSize); // Allocate memory for circular buffer
         LOG_ARGS("Allocated circular buffer for %d frames. Total size: %d bytes.", KINETIX_CIRC_BUFF_SIZE, frameBufferSize * KINETIX_CIRC_BUFF_SIZE);
@@ -658,9 +690,31 @@ void ADKinetix::acquisitionThread()
             // New frame successfully collected.
             setIntegerParam(ADNumImagesCounter, collectedImages);
             LOG_ARGS("Readout frame #%d, in %d", collectedImages, this->cameraContext->eofFrameInfo.ReadoutTime);
+            updateTimeStamp(&pArray->epicsTS);
 
-            // TODO: convert frame data into NDArray
+            pArray->getInfo(&arrayInfo);
+            setIntegerParam(NDArraySize, (int)arrayInfo.totalBytes);
+            setIntegerParam(NDArraySizeX, arrayInfo.xSize);
+            setIntegerParam(NDArraySizeY, arrayInfo.ySize);
+
+            // Copy data from eofFrame to pArray
+            memcpy(pArray->pData, this->cameraContext->eofFrame, arrayInfo.totalBytes);
+
+            //increment the array counter
+            int arrayCounter;
+            getIntegerParam(NDArrayCounter, &arrayCounter);
+            arrayCounter++;
+            setIntegerParam(NDArrayCounter, arrayCounter);
+        
+            //refresh PVs
+            callParamCallbacks();
+
+            pArray->pAttributeList->add("ColorMode", "Color Mode", NDAttrInt32, &colorMode);
             
+            //Sends image to the ArrayDataPV
+            getAttributes(pArray->pAttributeList);
+            doCallbacksGenericPointer(pArray, NDArrayData, 0);
+
             if(acquisitionMode == ADImageSingle){
                 pl_exp_finish_seq(this->cameraContext->hcam, this->frameBuffer, 0);
                 this->acquisitionActive = false;
@@ -674,9 +728,9 @@ void ADKinetix::acquisitionThread()
         }
     }
 
-    LOG("Acquisition done.");
-    if(this->frameBuffer != nullptr)
-        free(this->frameBuffer);
+    LOG("Acquisition done. Freeing framebuffers.");
+    free(this->frameBuffer);
+    pArray->release();
     setIntegerParam(ADStatusAcquire, ADStatusIdle);
     setIntegerParam(ADAcquire, 0);
     callParamCallbacks();

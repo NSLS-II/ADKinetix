@@ -106,8 +106,9 @@ private:
     void acquireStart();
     void acquireStop();
     void updateCameraRegion();
+    void getCurrentFrameDimensions(size_t* dims);
 
-
+    NDDataType_t getCurrentNDBitDepth();
     CameraContext* cameraContext; 
     bool acquisitionActive = false;
     bool monitoringActive = false;
