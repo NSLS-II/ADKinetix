@@ -112,7 +112,7 @@ private:
     bool acquisitionActive = false;
     bool monitoringActive = false;
     int deviceIndex;
-    void* frameBuffer;
+    void* frameBuffer = nullptr;
     epicsThreadId monitorThreadId, acquisitionThreadId;
 };
 

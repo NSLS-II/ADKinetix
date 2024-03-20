@@ -618,6 +618,7 @@ void ADKinetix::acquisitionThread()
             free(this->frameBuffer);
 
         this->frameBuffer = (uns8*) calloc(1, (size_t) frameBufferSize);
+        LOG_ARGS("Allocated frame buffer of size %d...", frameBufferSize);
 
         if(PV_OK != pl_exp_start_seq(this->cameraContext->hcam, this->frameBuffer)) {
             ERR_TO_STATUS("pl_exp_start_seq");
@@ -631,6 +632,7 @@ void ADKinetix::acquisitionThread()
             free(this->frameBuffer);
 
         this->frameBuffer = (uns8*) calloc(KINETIX_CIRC_BUFF_SIZE, (size_t) frameBufferSize); // Allocate memory for circular buffer
+        LOG_ARGS("Allocated circular buffer for %d frames. Total size: %d bytes.", KINETIX_CIRC_BUFF_SIZE, frameBufferSize * KINETIX_CIRC_BUFF_SIZE);
 
         if(PV_OK != pl_exp_start_cont(this->cameraContext->hcam, this->frameBuffer, KINETIX_CIRC_BUFF_SIZE * frameBufferSize)) {
             ERR_TO_STATUS("pl_exp_start_cont");
@@ -642,11 +644,12 @@ void ADKinetix::acquisitionThread()
 
         getIntegerParam(ADNumImagesCounter, &collectedImages);
 
+        LOG("Waiting for next frame...");
         eofSuccess = this->waitForEofEvent((uns32) 5000);
         if(eofSuccess){
             // New frame successfully collected.
             setIntegerParam(ADNumImagesCounter, collectedImages + 1);
-            LOG_ARGS("Recieved frame #%d", collectedImages + 1);
+            LOG_ARGS("Recieved frame #%d.", collectedImages + 1);
 
             // TODO: convert frame data into NDArray
             
@@ -663,6 +666,7 @@ void ADKinetix::acquisitionThread()
         }
     }
 
+    LOG("Acquisition done.");
     free(this->frameBuffer);
     setIntegerParam(ADStatusAcquire, ADStatusIdle);
     setIntegerParam(ADAcquire, 0);
@@ -699,7 +703,7 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value)
     /* Do callbacks so higher layers see any changes */
     callParamCallbacks();
 
-    if (status)
+    if (status != asynSuccess)
     {
         ERR_ARGS("error, status=%d function=%d, value=%f", status, function, value);
     }
