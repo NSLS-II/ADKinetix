@@ -433,6 +433,7 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
     const char *functionName = "ADKinetix";
     asynStatus status = asynSuccess;
 
+    /*
     createParam(KinetixTemperatureString,             asynParamFloat64,   &KinetixTemperature);
     //createParam(KinetixFanSpeedString,                 asynParamInt32,   &KinetixFanSpeed);
     createParam(KinetixReadoutPortString,             asynParamOctet,   &KinetixReadoutPort);
@@ -441,6 +442,7 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
     createParam(KinetixSpeedIdxString,             asynParamInt32,   &KinetixSpeedIdx);
     createParam(KinetixGainDescString,             asynParamOctet,   &KinetixGainDesc);
     createParam(KinetixGainIdxString,             asynParamInt32,   &KinetixGainIdx);
+    */
 
     if (!pl_pvcam_init ())
     {
@@ -691,12 +693,11 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value)
 
     /* Set the parameter and readback in the parameter library.  This may be overwritten when we read back the
      * status at the end, but that's OK */
-    getIntegerParam(ADStatusAcquire, &detectorStatus);
 
     if(function ==  ADAcquire){
-        if(detectorStatus == ADStatusAcquire && value == 0) {
+        if(this->acquisitionActive && value == 0) {
             this->acquireStop();
-        } else if(detectorStatus == ADStatusIdle && value == 1) {
+        } else if(!this->acquisitionActive && value == 1) {
             this->acquireStart();
         } else if(value == 0){
             ERR("Acquisition not active!");

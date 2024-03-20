@@ -116,7 +116,8 @@ private:
     epicsThreadId monitorThreadId, acquisitionThreadId;
 };
 
-#define NUM_KINETIX_PARAMS ((int)(&LAST_KINETIX_PARAM - &FIRST_KINETIX_PARAM + 1))
+//#define NUM_KINETIX_PARAMS ((int)(&LAST_KINETIX_PARAM - &FIRST_KINETIX_PARAM + 1))
+#define NUM_KINETIX_PARAMS 0
 
 //______________________________________________________________________________________________
 
