@@ -6,3 +6,4 @@ dbd/
 .vscode/
 envPaths
 dllPath.bat
+*.sav*

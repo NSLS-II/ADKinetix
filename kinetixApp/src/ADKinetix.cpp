@@ -689,7 +689,7 @@ void ADKinetix::acquisitionThread()
             collectedImages += 1;
             // New frame successfully collected.
             setIntegerParam(ADNumImagesCounter, collectedImages);
-            LOG_ARGS("Readout frame #%d, in %d", collectedImages, this->cameraContext->eofFrameInfo.ReadoutTime);
+            LOG_ARGS("Readout frame #%d.", collectedImages);
             updateTimeStamp(&pArray->epicsTS);
 
             pArray->getInfo(&arrayInfo);
