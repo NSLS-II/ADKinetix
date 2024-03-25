@@ -39,27 +39,38 @@
 // PVCam examples helper data structures
 #include "ADKinetixDS.h"
 
-//______________________________________________________________________________________________
-
+// Size of the circular buffer
 #define KINETIX_CIRC_BUFF_SIZE 50
 
 static const char *driverName = "ADKinetix";
 
-//______________________________________________________________________________________________
 
+/**
+ * 
+ */
 
-
-//______________________________________________________________________________________________
-
+// Temperature and Fan signals
 #define KinetixTemperatureString             "KINETIX_TEMP"
 #define KinetixFanSpeedString                "KINETIX_FAN_SPEED"
 
+
+#define KinetixStopAcqOnTimeoutString       "KINETIX_STOP_ACQ_ON_TO"
+#define KinetixArmedString                  "KINETIX_ARMED"
+
+#define KinetixModeValidString              "KINETIX_MODE_VALID"
 #define KinetixReadoutPortIdxString          "KINETIX_READOUT_PORT_IDX"
 #define KinetixReadoutPortString          "KINETIX_READOUT_PORT"
 #define KinetixSpeedIdxString             "KINETIX_SPEED_IDX"
 #define KinetixSpeedString              "KINETIX_SPEED"
 #define KinetixGainIdxString             "KINETIX_GAIN_IDX"
 #define KinetixGainDescString             "KINETIX_GAIN_DESC"
+
+
+typedef enum {
+    KINETIX_TRIG_INTERNAL = 0,
+    KINETIX_TRIG_EDGE = 1,
+    KINETIX_TRIG_GATE = 2,
+} KINETIX_TRIGGER_MODE;
 
 
 
@@ -83,6 +94,11 @@ public:
 protected:
     int KinetixTemperature;
     #define FIRST_KINETIX_PARAM KinetixTemperature
+    int KinetixFanSpeed;
+    int KinetixStopAcqOnTimeout;
+    int KinetixArmed;
+
+    int KinetixModeValid;
     int KinetixReadoutPortIdx;
     int KinetixReadoutPort;
     int KinetixSpeedIdx;
@@ -101,6 +117,7 @@ private:
     void printSpeedTable();
     bool getSpeedTable();
     void updateImageFormat();
+    void updateSpeedTableDesc();
     asynStatus selectSpeedTableMode(int speedTableIndex, int speedIndex, int gainIndex);
 
     void acquireStart();
