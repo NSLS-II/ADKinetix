@@ -524,6 +524,7 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 setIntegerParam(ADBinY, 1);
                 setIntegerParam(ADSizeX, this->cameraContext->sensorResX);
                 setIntegerParam(ADSizeY, this->cameraContext->sensorResY);
+                setIntegerParam()
                 callParamCallbacks();
                 updateCameraRegion();
 
@@ -576,9 +577,10 @@ void ADKinetix::monitorThread()
     {
         if (!this->acquisitionActive)
         {
+            pl_get_param()
         }
         callParamCallbacks();
-        epicsThreadSleep(0.1);
+        epicsThreadSleep(1);
     }
 }
 
@@ -615,20 +617,65 @@ void ADKinetix::acquireStop()
 
 NDDataType_t ADKinetix::getCurrentNDBitDepth()
 {
+
+    int readoutPortIdx, speedIdx, gainIdx;
+    getIntegerParam(KinetixReadoutPortIdx, &readoutPortIdx);
+    getIntegerParam(KinetixSpeedIdx, &speedIdx);
+    getIntegerParam(KinetixGainIdx, &gainIdx);
+
     NDDataType_t dataType = NDUInt8;
-    if (this->cameraContext->speedTable[0].speeds[0].gains[1].bitDepth != 8)
+    if (this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains[gainIdx].bitDepth != 8)
     {
         dataType = NDUInt16;
     }
     return dataType;
 }
 
-void ADKinetix::updateSpeedTableDesc()
+void ADKinetix::updateReadoutPortDesc()
 {
     int readoutPortIdx, speedIdx, gainIdx;
     getIntegerParam(KinetixReadoutPortIdx, &readoutPortIdx);
     getIntegerParam(KinetixSpeedIdx, &speedIdx);
     getIntegerParam(KinetixGainIdx, &gainIdx);
+
+    int valid = 1;
+
+    if (this->cameraContext->speedTable.size() > readoutPortIdx)
+    { 
+        setStringParam(KinetixReadoutPortDesc, this->cameraContext->speedTable[readoutPortIdx].name.c_str());
+    }
+    else
+    {
+        setStringParam(KinetixReadoutPortDesc, "Not Available");
+        valid = 0;
+    }
+    if (valid == 1 && this->cameraContext->speedTable[readoutPortIdx].speeds.size() > speedIdx)
+    {
+        char speedDesc[40];
+        snprintf(speedDesc, 40, "Pixel time: %d ns", this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].pixTimeNs);
+        setStringParam(KinetixSpeedDesc, speedDesc);
+    }
+    else
+    {
+        setStringParam(KinetixSpeedDesc, "Invalid");
+        valid = 0;
+    }
+    if (valid == 1 && this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains.size() > gainIdx)
+    {
+        setStringParam(KinetixGainDesc, this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains[gainIdx].name.c_str());
+    }
+    else
+    {
+        setStringParam(KinetixGainDesc, "Invalid");
+        valid = 0;
+    }
+
+    if (valid == 1)
+    {
+        NDDataType_t dataType = getCurrentNDBitDepth();
+        setIntegerParam(ADDataType, dataType);
+        setIntegerParam(KinetixModeValid, 1);
+    }
 }
 
 void ADKinetix::acquisitionThread()
@@ -636,7 +683,7 @@ void ADKinetix::acquisitionThread()
     const char *functionName = "acquisitionThread";
     int acquiring, acquisitionMode, targetNumImages, collectedImages, triggerMode, stopAcqOnTimeout, modeValid;
     bool eofSuccess;
-    double exposureTime;
+    double exposureTime, acquirePeriod;
     int16 pvcamExposureMode;
     NDArray *pArray;
     NDArrayInfo arrayInfo;
@@ -722,6 +769,7 @@ void ADKinetix::acquisitionThread()
     }
 
     setIntegerParam(ADStatus, ADStatusAcquire);
+
 
     while (acquisitionActive)
     {
@@ -821,11 +869,42 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value)
         else if (value == 0)
         {
             ERR("Acquisition not active!");
+            status = asynError;
         }
         else
         {
             ERR("Acquisition already active!");
+            status = asynError;
         }
+    }
+    else if (function == KinetixGainIdx || function == KinetixSpeedIdx || function == KinetixReadoutPortIdx)
+    {
+
+    }
+    else if (function == KinetixApplyReadoutPort)
+    {
+        LOG("Applying selected readout mode...");
+        int readoutModeValid;
+        getIntegerParam(KinetixModeValid, &readoutModeValid);
+        if (readoutModeValid != 1)
+        {
+            ERR("Configured readout mode invalid!");
+            status = asynError;
+        }
+        else
+        {
+            int readoutIdx, speedIdx, gainIdx;
+            getIntegerParam(KinetixReadoutPortIdx, &readoutIdx);
+            getIntegerParam(KinetixSpeedIdx, &speedIdx);
+            getIntegerParam(KinetixGainIdx, &gainIdx);
+            selectSpeedTableMode(readoutIdx, speedIdx, gainIdx);
+        }
+    }
+    else if (function == ADBinX || function == ADBinY || function == ADMinX
+             || function == ADMaxX || function == ADSizeX || function == ADSizeY)
+    {
+        // If we change binning or image dims, update the internal region state
+        updateCameraRegion();
     }
 
     status = setIntegerParam(function, value);

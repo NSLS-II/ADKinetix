@@ -59,7 +59,7 @@ static const char *driverName = "ADKinetix";
 
 #define KinetixModeValidString              "KINETIX_MODE_VALID"
 #define KinetixReadoutPortIdxString          "KINETIX_READOUT_PORT_IDX"
-#define KinetixReadoutPortString          "KINETIX_READOUT_PORT"
+#define KinetixReadoutPortDescString          "KINETIX_READOUT_PORT"
 #define KinetixSpeedIdxString             "KINETIX_SPEED_IDX"
 #define KinetixSpeedString              "KINETIX_SPEED"
 #define KinetixGainIdxString             "KINETIX_GAIN_IDX"
@@ -100,7 +100,7 @@ protected:
 
     int KinetixModeValid;
     int KinetixReadoutPortIdx;
-    int KinetixReadoutPort;
+    int KinetixReadoutPortDesc;
     int KinetixSpeedIdx;
     int KinetixSpeed;
     int KinetixGainIdx;
@@ -117,7 +117,7 @@ private:
     void printSpeedTable();
     bool getSpeedTable();
     void updateImageFormat();
-    void updateSpeedTableDesc();
+    void updateReadoutPortDesc();
     asynStatus selectSpeedTableMode(int speedTableIndex, int speedIndex, int gainIndex);
 
     void acquireStart();

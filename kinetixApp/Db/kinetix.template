@@ -98,7 +98,7 @@ record(mbbi, "$(P)$(R)ReadoutPortIdx_RBV")
     field(SCAN, "I/O Intr")
 }
 
-record(stringout, "$(P)$(R)ReadoutPort_RBV"){
+record(stringout, "$(P)$(R)ReadoutPortName_RBV"){
     field(DTYP, "asynOctet")
     field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_READOUT_PORT")
     field(SCAN, "I/O Intr")
@@ -138,7 +138,7 @@ record(mbbi, "$(P)$(R)SpeedIdx_RBV")
     field(SCAN, "I/O Intr")
 }
 
-record(stringout, "$(P)$(R)Speed_RBV"){
+record(stringout, "$(P)$(R)SpeedDesc_RBV"){
     field(DTYP, "asynOctet")
     field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_SPEED")
     field(SCAN, "I/O Intr")
