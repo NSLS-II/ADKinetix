@@ -100,7 +100,7 @@ record(mbbi, "$(P)$(R)ReadoutPortIdx_RBV")
 
 record(stringout, "$(P)$(R)ReadoutPortName_RBV"){
     field(DTYP, "asynOctet")
-    field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_READOUT_PORT")
+    field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_READOUT_PORT_DESC")
     field(SCAN, "I/O Intr")
 }
 
@@ -140,7 +140,7 @@ record(mbbi, "$(P)$(R)SpeedIdx_RBV")
 
 record(stringout, "$(P)$(R)SpeedDesc_RBV"){
     field(DTYP, "asynOctet")
-    field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_SPEED")
+    field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_SPEED_DESC")
     field(SCAN, "I/O Intr")
 }
 
@@ -184,8 +184,9 @@ record(stringout, "$(P)$(R)GainDesc_RBV"){
 }
 
 
-record(bo, "$(P)$(R)ApplyFormat") {
+record(bo, "$(P)$(R)ApplyReadoutMode") {
     field(DESC, "Apply currently selected operating mode")
+    field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_APPLY_MODE")
     field(VAL,  "0")
     field(SCAN, "I/O Intr")
 }

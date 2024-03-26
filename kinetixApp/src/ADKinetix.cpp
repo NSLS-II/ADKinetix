@@ -943,11 +943,7 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value)
         }
         else
         {
-            int readoutIdx, speedIdx, gainIdx;
-            getIntegerParam(KinetixReadoutPortIdx, &readoutIdx);
-            getIntegerParam(KinetixSpeedIdx, &speedIdx);
-            getIntegerParam(KinetixGainIdx, &gainIdx);
-            selectSpeedTableMode(readoutIdx, speedIdx, gainIdx);
+            selectSpeedTableMode();
         }
     }
     else if (function == ADBinX || function == ADBinY || function == ADMinX
