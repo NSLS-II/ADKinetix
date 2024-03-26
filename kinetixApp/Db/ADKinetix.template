@@ -1,4 +1,8 @@
-include "ADBase.template"
+# Database of records specific to the Kinetix areaDetector driver
+# Jakub Wlodek
+# 26 Mar 2024
+
+
 
 
 # Redefine some record signatures to overwrite those included with ADBase
@@ -23,7 +27,7 @@ record(mbbi,"$(P)$(R)TriggerMode_RBV") {
     field(TWST,"Exp. Gate")
 }
 
-# Armed flag, which indicates Pilatus is ready for external triggers
+# Armed flag, which indicates the Kinetix is ready for external triggers
 record(bi, "$(P)$(R)Armed_RBV")
 {
     field(DTYP, "asynInt32")
@@ -39,9 +43,6 @@ record(bo, "$(P)$(R)StopAcqOnTimeout")
     field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_STOP_ACQ_ON_TO")
     field(ZNAM, "No")
     field(ONAM, "Yes")
-    field(VAL, "NO")
-    field(PINI, "Yes")
-    field(SCAN, "I/O Intr")
 }
 
 
@@ -61,7 +62,7 @@ record(ai, "$(P)$(R)Temperature_RBV")
 {
    field(DTYP, "asynFloat64")
    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_TEMP")
-   field(SCAN, "1 second")
+   field(SCAN, "I/O Intr")
 }
 
 
@@ -79,7 +80,6 @@ record(mbbo, "$(P)$(R)ReadoutPortIdx")
     field(THST, "Readout Port 4")
     field(THVL, "3")
     field(VAL, 0)
-    field(SCAN, "I/O Intr")
 }
 
 
@@ -98,7 +98,7 @@ record(mbbi, "$(P)$(R)ReadoutPortIdx_RBV")
     field(SCAN, "I/O Intr")
 }
 
-record(stringout, "$(P)$(R)ReadoutPortName_RBV"){
+record(stringin, "$(P)$(R)ReadoutPortName_RBV"){
     field(DTYP, "asynOctet")
     field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_READOUT_PORT_DESC")
     field(SCAN, "I/O Intr")
@@ -119,7 +119,6 @@ record(mbbo, "$(P)$(R)SpeedIdx")
     field(THST, "Speed Index 4")
     field(THVL, "3")
     field(VAL, 0)
-    field(SCAN, "I/O Intr")
 }
 
 
@@ -138,7 +137,7 @@ record(mbbi, "$(P)$(R)SpeedIdx_RBV")
     field(SCAN, "I/O Intr")
 }
 
-record(stringout, "$(P)$(R)SpeedDesc_RBV"){
+record(stringin, "$(P)$(R)SpeedDesc_RBV"){
     field(DTYP, "asynOctet")
     field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_SPEED_DESC")
     field(SCAN, "I/O Intr")
@@ -159,7 +158,6 @@ record(mbbo, "$(P)$(R)GainIdx")
     field(THST, "Gain Index 4")
     field(THVL, "3")
     field(VAL, 0)
-    field(SCAN, "I/O Intr")
 }
 
 record(mbbi, "$(P)$(R)GainIdx_RBV")
@@ -177,7 +175,7 @@ record(mbbi, "$(P)$(R)GainIdx_RBV")
     field(SCAN, "I/O Intr")
 }
 
-record(stringout, "$(P)$(R)GainDesc_RBV"){
+record(stringin, "$(P)$(R)GainDesc_RBV"){
     field(DTYP, "asynOctet")
     field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_GAIN_DESC")
     field(SCAN, "I/O Intr")
@@ -188,5 +186,5 @@ record(bo, "$(P)$(R)ApplyReadoutMode") {
     field(DESC, "Apply currently selected operating mode")
     field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_APPLY_MODE")
     field(VAL,  "0")
-    field(SCAN, "I/O Intr")
 }
+
