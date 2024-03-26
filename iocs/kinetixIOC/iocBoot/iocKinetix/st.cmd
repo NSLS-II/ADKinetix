@@ -27,7 +27,7 @@ epicsEnvSet("CBUFFS", "500")
 epicsEnvSet("EPICS_DB_INCLUDE_PATH", "$(ADCORE)/db")
 
 ADKinetixConfig(0, "$(PORT)", $(XSIZE), $(YSIZE), 3, 0, 0)
-dbLoadRecords("$(ADKINETIX)/db/kinetix.template", "P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1")
+dbLoadRecords("$(ADKINETIX)/db/ADinetix.template", "P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1")
 
 # Create a standard arrays plugin, set it to get data from pvCamera driver.
 NDStdArraysConfigure("Image1", 1, 0, "$(PORT)", 0, 10000000)

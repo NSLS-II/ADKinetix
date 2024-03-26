@@ -19,8 +19,12 @@
 #define LOG_ARGS(fmt, ...) asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, \
                                      "%s::%s: " fmt "\n", driverName, functionName, __VA_ARGS__);
 
-//_____________________________________________________________________________________________
 
+
+/**
+ * @brief Function that instatiates a driver object. Called from IOC shell
+ * 
+ */
 extern "C" int ADKinetixConfig(int deviceIndex, const char *portName, int maxSizeX, int maxSizeY, int dataType,
                                int maxBuffers, size_t maxMemory, int priority, int stackSize)
 {
@@ -30,18 +34,33 @@ extern "C" int ADKinetixConfig(int deviceIndex, const char *portName, int maxSiz
 
 //_____________________________________________________________________________________________
 
+/**
+ * @brief Wrapper C function passed to epicsThreadCreate to create temp monitor thread
+ * 
+ * @param drvPvt Pointer to instance of ADKinetix driver object
+ */
 static void monitorThreadC(void *drvPvt)
 {
     ADKinetix *pPvt = (ADKinetix *)drvPvt;
     pPvt->monitorThread();
 }
 
+/**
+ * @brief Wrapper C function passed to epicsThreadCreate to create acquisition thread
+ * 
+ * @param drvPvt Pointer to instance of ADKinetix driver object
+ */
 static void acquisitionThreadC(void *drvPvt)
 {
     ADKinetix *pPvt = (ADKinetix *)drvPvt;
     pPvt->acquisitionThread();
 }
 
+/**
+ * @brief Callback function called when exit is ran from IOC shell, deletes driver object instance
+ * 
+ * @param drvPvt Pointer to instance of ADKinetix driver object
+ */
 static void exitCallbackC(void *drvPvt)
 {
     ADKinetix *pPvt = (ADKinetix *)drvPvt;
@@ -54,6 +73,13 @@ static void exitCallbackC(void *drvPvt)
 //_____________________________________________________________________________________________
 //_____________________________________________________________________________________________
 
+/**
+ * @brief Function that blocks until either timeout is reached, or new frame callback is detected
+ * 
+ * @param timeoutMs Time to wait before returning in ms
+ * @return true if frame successfully was awaited
+ * @return false if acquisition was aborted or timed out
+ */
 bool ADKinetix::waitForEofEvent(uns32 timeoutMs)
 {
     std::unique_lock<std::mutex> lock(this->cameraContext->eofEvent.mutex);
@@ -61,7 +87,7 @@ bool ADKinetix::waitForEofEvent(uns32 timeoutMs)
     this->cameraContext->eofEvent.cond.wait_for(lock, std::chrono::milliseconds(timeoutMs),
                                                 [ctx]()
                                                 { return ctx->eofEvent.flag || ctx->threadAbortFlag; });
-    if (this->cameraContext->threadAbortFlag)
+    if (!this->acquisitionActive)
     {
         printf("Processing aborted on camera %d\n", this->cameraContext->hcam);
         return false;
@@ -79,6 +105,16 @@ bool ADKinetix::waitForEofEvent(uns32 timeoutMs)
     return true;
 }
 
+
+/**
+ * @brief Function that checks if camera supports SDK parameter
+ * 
+ * @param hcam device ID
+ * @param paramID parameter ID
+ * @param paramName parameter name
+ * @return true if parameter is supported
+ * @return false if parameter is not supported
+ */
 bool ADKinetix::isParamAvailable(int16 hcam, uns32 paramID, const char *paramName)
 {
     if (!paramName)
@@ -163,37 +199,37 @@ bool ADKinetix::readEnumeration(int16 hcam, NVPC *pNvpc, uns32 paramID, const ch
     return !pNvpc->empty();
 }
 
-asynStatus ADKinetix::selectSpeedTableMode(int speedTableIndex, int speedIndex, int gainIndex)
+void ADKinetix::selectSpeedTableMode()
 {
 
+    int readoutPortIdx, speedIdx, gainIdx;
+    getIntegerParam(KinetixReadoutPortIdx, &readoutPortIdx);
+    getIntegerParam(KinetixSpeedIdx, &speedIdx);
+    getIntegerParam(KinetixGainIdx, &gainIdx);
+
     const char *functionName = "selectSpeedTableMode";
+    updateReadoutPortDesc();
+
     if (PV_OK != pl_set_param(this->cameraContext->hcam, PARAM_READOUT_PORT,
-                              (void *)&this->cameraContext->speedTable[speedTableIndex].value))
+                              (void *)&this->cameraContext->speedTable[readoutPortIdx].value))
     {
         ERR_TO_STATUS("Readout port could not be set");
-        return asynError;
     }
-    const char *readoutPortName = this->cameraContext->speedTable[speedTableIndex].name.c_str();
-    setStringParam(KinetixReadoutPort, readoutPortName);
-    LOG_ARGS("Readout port set to '%s'\n", readoutPortName);
+    LOG_ARGS("Readout port set to '%s'", this->cameraContext->speedTable[readoutPortIdx].name.c_str());
 
     if (PV_OK != pl_set_param(this->cameraContext->hcam, PARAM_SPDTAB_INDEX,
-                              (void *)&this->cameraContext->speedTable[speedTableIndex].speeds[0].index))
+                              (void *)&this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].index))
     {
         ERR_TO_STATUS("Readout speed index could not be set");
-        return asynError;
     }
-    LOG_ARGS("Readout speed index set to %d\n", this->cameraContext->speedTable[speedTableIndex].speeds[speedIndex].index);
+    LOG_ARGS("Readout speed set to %d ns per pix", this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].pixTimeNs);
 
     if (PV_OK != pl_set_param(this->cameraContext->hcam, PARAM_GAIN_INDEX,
-                              (void *)&this->cameraContext->speedTable[speedTableIndex].speeds[speedIndex].gains[gainIndex].index))
+                              (void *)&this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains[gainIdx].index))
     {
         ERR_TO_STATUS("Gain index could not be set");
-        return asynError;
     }
-    LOG_ARGS("Gain index set to %d\n", this->cameraContext->speedTable[0].speeds[0].gains[0].index);
-    callParamCallbacks();
-    return asynSuccess;
+    LOG_ARGS("Gain set to %s", this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains[gainIdx].name.c_str());
 }
 
 void ADKinetix::printSpeedTable()
@@ -442,9 +478,9 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
     createParam(KinetixTemperatureString,             asynParamFloat64,   &KinetixTemperature);
     createParam(KinetixFanSpeedString,                 asynParamInt32,   &KinetixFanSpeed);
     createParam(KinetixStopAcqOnTimeoutString, asynParamInt32, &KinetixStopAcqOnTimeout);
-    createParam(KinetixReadoutPortString,             asynParamOctet,   &KinetixReadoutPort);
+    createParam(KinetixReadoutPortDescString,             asynParamOctet,   &KinetixReadoutPortDesc);
     createParam(KinetixReadoutPortIdxString,             asynParamInt32,   &KinetixReadoutPortIdx);
-    createParam(KinetixSpeedString,             asynParamOctet,   &KinetixSpeed);
+    createParam(KinetixSpeedDescString,             asynParamOctet,   &KinetixSpeedDesc);
     createParam(KinetixSpeedIdxString,             asynParamInt32,   &KinetixSpeedIdx);
     createParam(KinetixGainDescString,             asynParamOctet,   &KinetixGainDesc);
     createParam(KinetixGainIdxString,             asynParamInt32,   &KinetixGainIdx);
@@ -524,7 +560,7 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 setIntegerParam(ADBinY, 1);
                 setIntegerParam(ADSizeX, this->cameraContext->sensorResX);
                 setIntegerParam(ADSizeY, this->cameraContext->sensorResY);
-                setIntegerParam()
+                setIntegerParam(NDColorMode, NDColorModeMono);   // Only mono modes currently supported
                 callParamCallbacks();
                 updateCameraRegion();
 
@@ -534,7 +570,12 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 getSpeedTable();
                 printSpeedTable();
 
-                status = selectSpeedTableMode(0, 0, 0);
+                setIntegerParam(KinetixReadoutPortIdx, 0);
+                setIntegerParam(KinetixSpeedIdx, 0);
+                setIntegerParam(KinetixGainIdx, 0);
+                callParamCallbacks();
+
+                selectSpeedTableMode();
 
                 if (PV_OK != pl_cam_register_callback_ex3(this->cameraContext->hcam, PL_CALLBACK_EOF, (void *)newFrameCallback, this->cameraContext))
                 {
@@ -543,7 +584,7 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 else
                 {
                     LOG("Registered EOF callback function.");
-                    callParamCallbacks();
+                    
                     this->monitoringActive = true;
 
                     LOG("Spawning camera monitor thread...");
@@ -571,15 +612,24 @@ void ADKinetix::monitorThread()
     const char *functionName = "monitorThread";
     int acquiring;
 
-    LOG("Monitor thread active.");
+    LOG("Temperature monitor thread active.");
 
     while (this->monitoringActive)
     {
         if (!this->acquisitionActive)
         {
-            pl_get_param()
+            int16 temperature = 0;
+            if (PV_OK != pl_get_param(this->cameraContext->hcam, PARAM_TEMP, ATTR_CURRENT, (void*) &temperature))
+            {
+                ERR_TO_STATUS("Failed to get temperature.");
+            }
+            else
+            {
+                setDoubleParam(KinetixTemperature, (double) (temperature / 100.0));
+                callParamCallbacks();
+            }
         }
-        callParamCallbacks();
+        
         epicsThreadSleep(1);
     }
 }
@@ -673,7 +723,7 @@ void ADKinetix::updateReadoutPortDesc()
     if (valid == 1)
     {
         NDDataType_t dataType = getCurrentNDBitDepth();
-        setIntegerParam(ADDataType, dataType);
+        setIntegerParam(NDDataType, dataType);
         setIntegerParam(KinetixModeValid, 1);
     }
 }
@@ -881,7 +931,7 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value)
     {
 
     }
-    else if (function == KinetixApplyReadoutPort)
+    else if (function == KinetixApplyReadoutMode)
     {
         LOG("Applying selected readout mode...");
         int readoutModeValid;
@@ -901,7 +951,7 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value)
         }
     }
     else if (function == ADBinX || function == ADBinY || function == ADMinX
-             || function == ADMaxX || function == ADSizeX || function == ADSizeY)
+             || function == ADMinY || function == ADSizeX || function == ADSizeY)
     {
         // If we change binning or image dims, update the internal region state
         updateCameraRegion();

@@ -11,8 +11,8 @@ include $(TOP)/configure/CONFIG
 # Create and install (or just install)
 # databases, templates, substitutions like this
 
-DB += kinetix.template
-DB += kinetix_settings.req
+DB += ADKinetix.template
+DB += ADKinetix_settings.req
 
 #----------------------------------------------------
 # If <anyname>.db template is not named <anyname>*.template add

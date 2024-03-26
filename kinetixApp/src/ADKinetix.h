@@ -55,13 +55,15 @@ static const char *driverName = "ADKinetix";
 
 
 #define KinetixStopAcqOnTimeoutString       "KINETIX_STOP_ACQ_ON_TO"
+#define KinetixWaitForFrameTimeoutString    "KINETIX_WAIT_FOR_FRAME_TO"
 #define KinetixArmedString                  "KINETIX_ARMED"
 
+#define KinetixApplyReadoutModeString       "KINETIX_APPLY_MODE"
 #define KinetixModeValidString              "KINETIX_MODE_VALID"
 #define KinetixReadoutPortIdxString          "KINETIX_READOUT_PORT_IDX"
-#define KinetixReadoutPortDescString          "KINETIX_READOUT_PORT"
+#define KinetixReadoutPortDescString          "KINETIX_READOUT_PORT_DESC"
 #define KinetixSpeedIdxString             "KINETIX_SPEED_IDX"
-#define KinetixSpeedString              "KINETIX_SPEED"
+#define KinetixSpeedDescString              "KINETIX_SPEED_DESC"
 #define KinetixGainIdxString             "KINETIX_GAIN_IDX"
 #define KinetixGainDescString             "KINETIX_GAIN_DESC"
 
@@ -96,13 +98,15 @@ protected:
     #define FIRST_KINETIX_PARAM KinetixTemperature
     int KinetixFanSpeed;
     int KinetixStopAcqOnTimeout;
+    int KinetixWaitForFrameTimeout;
     int KinetixArmed;
 
+    int KinetixApplyReadoutMode;
     int KinetixModeValid;
     int KinetixReadoutPortIdx;
     int KinetixReadoutPortDesc;
     int KinetixSpeedIdx;
-    int KinetixSpeed;
+    int KinetixSpeedDesc;
     int KinetixGainIdx;
     int KinetixGainDesc;
     #define LAST_KINETIX_PARAM KinetixGainDesc 
@@ -118,7 +122,7 @@ private:
     bool getSpeedTable();
     void updateImageFormat();
     void updateReadoutPortDesc();
-    asynStatus selectSpeedTableMode(int speedTableIndex, int speedIndex, int gainIndex);
+    void selectSpeedTableMode();
 
     void acquireStart();
     void acquireStop();
@@ -134,8 +138,7 @@ private:
     epicsThreadId monitorThreadId, acquisitionThreadId;
 };
 
-//#define NUM_KINETIX_PARAMS ((int)(&LAST_KINETIX_PARAM - &FIRST_KINETIX_PARAM + 1))
-#define NUM_KINETIX_PARAMS 0
+#define NUM_KINETIX_PARAMS ((int)(&LAST_KINETIX_PARAM - &FIRST_KINETIX_PARAM + 1))
 
 //______________________________________________________________________________________________
 
