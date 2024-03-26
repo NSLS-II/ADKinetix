@@ -46,7 +46,6 @@ record(bo, "$(P)$(R)StopAcqOnTimeout")
 }
 
 
-
 record(bi, "$(P)$(R)StopAcqOnTimeout_RBV")
 {
     field(DTYP, "asynInt32")
@@ -60,9 +59,9 @@ record(bi, "$(P)$(R)StopAcqOnTimeout_RBV")
 
 record(ai, "$(P)$(R)Temperature_RBV")
 {
-   field(DTYP, "asynFloat64")
-   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_TEMP")
-   field(SCAN, "I/O Intr")
+    field(DTYP, "asynFloat64")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_TEMP")
+    field(SCAN, "I/O Intr")
 }
 
 
@@ -79,7 +78,7 @@ record(mbbo, "$(P)$(R)ReadoutPortIdx")
     field(TWVL, "2")
     field(THST, "Readout Port 4")
     field(THVL, "3")
-    field(VAL, 0)
+    field(VAL, "0")
 }
 
 
@@ -118,7 +117,7 @@ record(mbbo, "$(P)$(R)SpeedIdx")
     field(TWVL, "2")
     field(THST, "Speed Index 4")
     field(THVL, "3")
-    field(VAL, 0)
+    field(VAL, "0")
 }
 
 
@@ -157,7 +156,7 @@ record(mbbo, "$(P)$(R)GainIdx")
     field(TWVL, "2")
     field(THST, "Gain Index 4")
     field(THVL, "3")
-    field(VAL, 0)
+    field(VAL, "0")
 }
 
 record(mbbi, "$(P)$(R)GainIdx_RBV")
@@ -187,4 +186,3 @@ record(bo, "$(P)$(R)ApplyReadoutMode") {
     field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_APPLY_MODE")
     field(VAL,  "0")
 }
-

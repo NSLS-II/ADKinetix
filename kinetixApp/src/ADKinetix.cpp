@@ -831,7 +831,7 @@ void ADKinetix::acquisitionThread()
             setIntegerParam(KinetixArmed, 1);
 
         LOG("Waiting for next frame...");
-        eofSuccess = this->waitForEofEvent((uns32)5000);
+        eofSuccess = this->waitForEofEvent((uns32) 500);
         if (eofSuccess)
         {
             collectedImages += 1;
@@ -853,6 +853,9 @@ void ADKinetix::acquisitionThread()
             getIntegerParam(NDArrayCounter, &arrayCounter);
             arrayCounter++;
             setIntegerParam(NDArrayCounter, arrayCounter);
+
+            // set the image unique ID to the number in the sequence
+            pArray->uniqueId = arrayCounter;
 
             // refresh PVs
             callParamCallbacks();
