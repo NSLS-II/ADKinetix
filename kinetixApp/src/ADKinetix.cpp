@@ -729,6 +729,7 @@ void ADKinetix::updateReadoutPortDesc()
         setIntegerParam(NDDataType, dataType);
         setIntegerParam(KinetixModeValid, 1);
     }
+    else setIntegerParam(KinetixModeValid, 0);
     callParamCallbacks();
 }
 
