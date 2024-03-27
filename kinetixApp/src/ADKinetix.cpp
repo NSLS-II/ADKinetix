@@ -757,22 +757,6 @@ void ADKinetix::acquisitionThread()
         return;
     }
 
-    // Allocate the NDArray once at the start of each acquisition start.
-    this->pArrays[0] = pNDArrayPool->alloc(2, dims, dataType, 0, NULL);
-    if (this->pArrays[0] != NULL)
-    {
-        pArray = this->pArrays[0];
-    }
-    else
-    {
-        this->pArrays[0]->release();
-        ERR("Failed to allocate array!");
-        setIntegerParam(ADStatus, ADStatusError);
-        setIntegerParam(ADAcquire, 0);
-        callParamCallbacks();
-        return;
-    }
-
     getDoubleParam(ADAcquireTime, &exposureTime);
     getIntegerParam(ADTriggerMode, &triggerMode);
     getIntegerParam(ADImageMode, &acquisitionMode);
@@ -841,6 +825,24 @@ void ADKinetix::acquisitionThread()
         eofSuccess = this->waitForEofEvent((uns32) waitForFrameTO);
         if (eofSuccess)
         {
+            // Allocate the NDArray
+            this->pArrays[0] = pNDArrayPool->alloc(2, dims, dataType, 0, NULL);
+            if (this->pArrays[0] != NULL)
+            {
+                pArray = this->pArrays[0];
+            }
+            else
+            {
+                this->pArrays[0]->release();
+                ERR("Failed to allocate array!");
+                setIntegerParam(ADStatus, ADStatusError);
+                if(acquisitionMode == ADImageSingle)
+                    pl_exp_finish_seq(this->cameraContext->hcam, this->frameBuffer, 0);
+                else pl_exp_abort(this->cameraContext->hcam, CCS_HALT);
+                callParamCallbacks();
+                break;
+            }
+
             collectedImages += 1;
             // New frame successfully collected.
             setIntegerParam(ADNumImagesCounter, collectedImages);
@@ -882,6 +884,8 @@ void ADKinetix::acquisitionThread()
                 pl_exp_abort(this->cameraContext->hcam, CCS_HALT);
                 this->acquisitionActive = false;
             }
+            // Release the array
+            pArray->release();
         }
         else if(stopAcqOnTO == 0)
         {
@@ -894,6 +898,9 @@ void ADKinetix::acquisitionThread()
             // if we kill acq on TO, set status to aborting.
             setIntegerParam(ADStatus, ADStatusAborting);
             ERR("Failed to register EOF Event before timeout expired!");
+            if(acquisitionMode == ADImageSingle)
+                pl_exp_finish_seq(this->cameraContext->hcam, this->frameBuffer, 0);
+            else pl_exp_abort(this->cameraContext->hcam, CCS_HALT);
             this->acquisitionActive = false;
         }
         // refresh all PVs
@@ -902,7 +909,7 @@ void ADKinetix::acquisitionThread()
 
     LOG("Acquisition done. Freeing framebuffers.");
     free(this->frameBuffer);
-    pArray->release();
+
     setIntegerParam(ADStatus, ADStatusIdle);
     setIntegerParam(ADAcquire, 0);
     callParamCallbacks();
