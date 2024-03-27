@@ -27,16 +27,6 @@ record(mbbi,"$(P)$(R)TriggerMode_RBV") {
     field(TWST,"Exp. Gate")
 }
 
-# Armed flag, which indicates the Kinetix is ready for external triggers
-record(bi, "$(P)$(R)Armed_RBV")
-{
-    field(DTYP, "asynInt32")
-    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_ARMED")
-    field(ZNAM, "Unarmed")
-    field(ONAM, "Armed")
-    field(SCAN, "I/O Intr")
-}
-
 record(bo, "$(P)$(R)StopAcqOnTimeout")
 {
     field(DTYP, "asynInt32")
