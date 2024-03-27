@@ -478,12 +478,15 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
     createParam(KinetixTemperatureString,             asynParamFloat64,   &KinetixTemperature);
     createParam(KinetixFanSpeedString,                 asynParamInt32,   &KinetixFanSpeed);
     createParam(KinetixStopAcqOnTimeoutString, asynParamInt32, &KinetixStopAcqOnTimeout);
+    createParam(KinetixWaitForFrameTimeoutString, asynParamInt32, &KinetixWaitForFrameTimeout);
+    createParam(KinetixApplyReadoutModeString, asynParamInt32, &KinetixApplyReadoutMode);
+    createParam(KinetixModeValidString, asynParamInt32, &KinetixModeValid);
     createParam(KinetixReadoutPortDescString,             asynParamOctet,   &KinetixReadoutPortDesc);
     createParam(KinetixReadoutPortIdxString,             asynParamInt32,   &KinetixReadoutPortIdx);
     createParam(KinetixSpeedDescString,             asynParamOctet,   &KinetixSpeedDesc);
     createParam(KinetixSpeedIdxString,             asynParamInt32,   &KinetixSpeedIdx);
-    createParam(KinetixGainDescString,             asynParamOctet,   &KinetixGainDesc);
     createParam(KinetixGainIdxString,             asynParamInt32,   &KinetixGainIdx);
+    createParam(KinetixGainDescString,             asynParamOctet,   &KinetixGainDesc);
 
     if (!pl_pvcam_init())
     {
@@ -731,7 +734,8 @@ void ADKinetix::updateReadoutPortDesc()
 void ADKinetix::acquisitionThread()
 {
     const char *functionName = "acquisitionThread";
-    int acquiring, acquisitionMode, targetNumImages, collectedImages, triggerMode, stopAcqOnTimeout, modeValid;
+    int acquiring, acquisitionMode, targetNumImages, collectedImages, 
+        triggerMode, stopAcqOnTO, waitForFrameTO, modeValid;
     bool eofSuccess;
     double exposureTime, acquirePeriod;
     int16 pvcamExposureMode;
@@ -773,6 +777,8 @@ void ADKinetix::acquisitionThread()
     getIntegerParam(ADTriggerMode, &triggerMode);
     getIntegerParam(ADImageMode, &acquisitionMode);
     getIntegerParam(ADNumImages, &targetNumImages);
+    getIntegerParam(KinetixStopAcqOnTimeout, &stopAcqOnTO);
+    getIntegerParam(KinetixWaitForFrameTimeout, &waitForFrameTO);
 
     // Convert EPICS selected trigger mode to PvCam format
     if (triggerMode == KINETIX_TRIG_INTERNAL)
@@ -818,20 +824,21 @@ void ADKinetix::acquisitionThread()
         }
     }
 
-    setIntegerParam(ADStatus, ADStatusAcquire);
+    // In external trigger mode, set detector status to waiting before we get first frame
+    if(triggerMode != KINETIX_TRIG_INTERNAL)
+        setIntegerParam(ADStatus, ADStatusWaiting);
+    else
+        setIntegerParam(ADStatus, ADStatusAcquire);
+    callParamCallbacks();
 
 
     while (acquisitionActive)
     {
 
-        getIntegerParam(KinetixStopAcqOnTimeout, &stopAcqOnTimeout);
         getIntegerParam(ADNumImagesCounter, &collectedImages);
 
-        if(triggerMode != KINETIX_TRIG_INTERNAL)
-            setIntegerParam(KinetixArmed, 1);
-
         LOG("Waiting for next frame...");
-        eofSuccess = this->waitForEofEvent((uns32) 500);
+        eofSuccess = this->waitForEofEvent((uns32) waitForFrameTO);
         if (eofSuccess)
         {
             collectedImages += 1;
@@ -845,6 +852,8 @@ void ADKinetix::acquisitionThread()
             setIntegerParam(NDArraySizeX, arrayInfo.xSize);
             setIntegerParam(NDArraySizeY, arrayInfo.ySize);
 
+            setIntegerParam(ADStatus, ADStatusAcquire);
+
             // Copy data from eofFrame to pArray
             memcpy(pArray->pData, this->cameraContext->eofFrame, arrayInfo.totalBytes);
 
@@ -856,9 +865,6 @@ void ADKinetix::acquisitionThread()
 
             // set the image unique ID to the number in the sequence
             pArray->uniqueId = arrayCounter;
-
-            // refresh PVs
-            callParamCallbacks();
 
             pArray->pAttributeList->add("ColorMode", "Color Mode", NDAttrInt32, &colorMode);
 
@@ -877,18 +883,23 @@ void ADKinetix::acquisitionThread()
                 this->acquisitionActive = false;
             }
         }
-        else if(stopAcqOnTimeout == 0)
+        else if(stopAcqOnTO == 0)
         {
+            // if we don't want to stop acq on a timeout, continue but set the status to waiting.
             LOG("Timeout waiting for next frame, trying again!");
+            setIntegerParam(ADStatus, ADStatusWaiting);
         }
         else
         {
+            // if we kill acq on TO, set status to aborting.
+            setIntegerParam(ADStatus, ADStatusAborting);
             ERR("Failed to register EOF Event before timeout expired!");
             this->acquisitionActive = false;
         }
+        // refresh all PVs
+        callParamCallbacks();
     }
 
-    setIntegerParam(KinetixArmed, 0);
     LOG("Acquisition done. Freeing framebuffers.");
     free(this->frameBuffer);
     pArray->release();
@@ -908,6 +919,7 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value)
 
     /* Set the parameter and readback in the parameter library.  This may be overwritten when we read back the
      * status at the end, but that's OK */
+    status = setIntegerParam(function, value);
 
     if (function == ADAcquire)
     {
@@ -932,7 +944,7 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value)
     }
     else if (function == KinetixGainIdx || function == KinetixSpeedIdx || function == KinetixReadoutPortIdx)
     {
-
+        updateReadoutPortDesc();
     }
     else if (function == KinetixApplyReadoutMode)
     {
@@ -956,7 +968,6 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value)
         updateCameraRegion();
     }
 
-    status = setIntegerParam(function, value);
 
     /* Do callbacks so higher layers see any changes */
     callParamCallbacks();

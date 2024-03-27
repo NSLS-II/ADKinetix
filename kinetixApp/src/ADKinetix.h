@@ -56,7 +56,6 @@ static const char *driverName = "ADKinetix";
 
 #define KinetixStopAcqOnTimeoutString       "KINETIX_STOP_ACQ_ON_TO"
 #define KinetixWaitForFrameTimeoutString    "KINETIX_WAIT_FOR_FRAME_TO"
-#define KinetixArmedString                  "KINETIX_ARMED"
 
 #define KinetixApplyReadoutModeString       "KINETIX_APPLY_MODE"
 #define KinetixModeValidString              "KINETIX_MODE_VALID"
@@ -99,7 +98,6 @@ protected:
     int KinetixFanSpeed;
     int KinetixStopAcqOnTimeout;
     int KinetixWaitForFrameTimeout;
-    int KinetixArmed;
 
     int KinetixApplyReadoutMode;
     int KinetixModeValid;
@@ -110,8 +108,6 @@ protected:
     int KinetixGainIdx;
     int KinetixGainDesc;
     #define LAST_KINETIX_PARAM KinetixGainDesc 
-
-    
 
 private:
     void reportKinetixError(const char *functionName, const char *appMessage);
