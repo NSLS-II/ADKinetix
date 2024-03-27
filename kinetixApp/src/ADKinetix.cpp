@@ -235,11 +235,16 @@ void ADKinetix::selectSpeedTableMode()
     LOG_ARGS("Gain set to %s", this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains[gainIdx].name.c_str());
 
     char readoutModeStr[256];
-    snprintf(readoutModeStr, 256, "Mode: %s @ %d pixtime w/ %d bpp", 
+    snprintf(readoutModeStr, 256, "Mode: %s @ %d nspp w/ %d bpp", 
              this->cameraContext->speedTable[readoutPortIdx].name.c_str(), 
              this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].pixTimeNs,
              this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains[gainIdx].bitDepth);
     setStringParam(KinetixReadoutMode, readoutModeStr);
+
+    if (this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains[gainIdx].bitDepth != 8){
+        this->cameraContext->imageFormat = PL_IMAGE_FORMAT_MONO16;
+    } else this->cameraContext->imageFormat = PL_IMAGE_FORMAT_MONO8;
+
     callParamCallbacks();
 }
 
@@ -843,7 +848,6 @@ void ADKinetix::acquisitionThread()
 
         getIntegerParam(ADNumImagesCounter, &collectedImages);
 
-        LOG("Waiting for next frame...");
         eofSuccess = this->waitForEofEvent((uns32) waitForFrameTO);
         if (eofSuccess)
         {
@@ -868,7 +872,6 @@ void ADKinetix::acquisitionThread()
             collectedImages += 1;
             // New frame successfully collected.
             setIntegerParam(ADNumImagesCounter, collectedImages);
-            LOG_ARGS("Readout frame #%d.", collectedImages);
             updateTimeStamp(&pArray->epicsTS);
 
             pArray->getInfo(&arrayInfo);
@@ -896,7 +899,7 @@ void ADKinetix::acquisitionThread()
             getAttributes(pArray->pAttributeList);
 
             // If we have a longer acq period than exposure, wait for difference
-            if (deadtime > 0) epicsThreadSleep(deadtime);
+            if (deadtime > 0) LOG_ARGS("Expecting to sleep for %f", deadtime) //epicsThreadSleep(deadtime);
 
             doCallbacksGenericPointer(pArray, NDArrayData, 0);
 
