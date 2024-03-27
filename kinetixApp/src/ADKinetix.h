@@ -57,6 +57,7 @@ static const char *driverName = "ADKinetix";
 #define KinetixStopAcqOnTimeoutString       "KINETIX_STOP_ACQ_ON_TO"
 #define KinetixWaitForFrameTimeoutString    "KINETIX_WAIT_FOR_FRAME_TO"
 
+#define KinetixReadoutModeString            "KINETIX_READOUT_MODE"
 #define KinetixApplyReadoutModeString       "KINETIX_APPLY_MODE"
 #define KinetixModeValidString              "KINETIX_MODE_VALID"
 #define KinetixReadoutPortIdxString          "KINETIX_READOUT_PORT_IDX"
@@ -99,6 +100,7 @@ protected:
     int KinetixStopAcqOnTimeout;
     int KinetixWaitForFrameTimeout;
 
+    int KinetixReadoutMode;
     int KinetixApplyReadoutMode;
     int KinetixModeValid;
     int KinetixReadoutPortIdx;

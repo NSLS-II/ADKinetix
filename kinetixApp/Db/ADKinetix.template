@@ -105,6 +105,13 @@ record(mbbi, "$(P)$(R)ReadoutPortIdx_RBV")
     field(SCAN, "I/O Intr")
 }
 
+record(waveform, "$(P)$(R)ReadoutMode_RBV") {
+    field(DTYP, "asynOctetRead")
+    field(FTVL, "256")
+    field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_READOUT_MODE")
+    field(SCAN, "I/O Intr")
+}
+
 record(stringin, "$(P)$(R)ReadoutPortName_RBV"){
     field(DTYP, "asynOctetRead")
     field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_READOUT_PORT_DESC")

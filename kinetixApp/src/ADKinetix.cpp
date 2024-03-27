@@ -214,6 +214,7 @@ void ADKinetix::selectSpeedTableMode()
                               (void *)&this->cameraContext->speedTable[readoutPortIdx].value))
     {
         ERR_TO_STATUS("Readout port could not be set");
+        return;
     }
     LOG_ARGS("Readout port set to '%s'", this->cameraContext->speedTable[readoutPortIdx].name.c_str());
 
@@ -221,6 +222,7 @@ void ADKinetix::selectSpeedTableMode()
                               (void *)&this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].index))
     {
         ERR_TO_STATUS("Readout speed index could not be set");
+        return;
     }
     LOG_ARGS("Readout speed set to %d ns per pix", this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].pixTimeNs);
 
@@ -228,8 +230,17 @@ void ADKinetix::selectSpeedTableMode()
                               (void *)&this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains[gainIdx].index))
     {
         ERR_TO_STATUS("Gain index could not be set");
+        return;
     }
     LOG_ARGS("Gain set to %s", this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains[gainIdx].name.c_str());
+
+    char readoutModeStr[256];
+    snprintf(readoutModeStr, 256, "Mode: %s @ %d pixtime w/ %d bpp", 
+             this->cameraContext->speedTable[readoutPortIdx].name.c_str(), 
+             this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].pixTimeNs,
+             this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains[gainIdx].bitDepth);
+    setStringParam(KinetixReadoutMode, readoutModeStr);
+    callParamCallbacks();
 }
 
 void ADKinetix::printSpeedTable()
@@ -248,7 +259,7 @@ void ADKinetix::printSpeedTable()
         for (const auto &speed : port.speeds)
         {
             printf("    - speed index %d, running at %f MHz\n",
-                   speed.index, 1000 / (float)speed.pixTimeNs);
+                   speed.index, 1000.0 / (float)speed.pixTimeNs);
             for (const auto &gain : speed.gains)
             {
                 printf("      - gain index %d, %sbit-depth %d bpp\n",
@@ -479,6 +490,7 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
     createParam(KinetixFanSpeedString,                 asynParamInt32,   &KinetixFanSpeed);
     createParam(KinetixStopAcqOnTimeoutString, asynParamInt32, &KinetixStopAcqOnTimeout);
     createParam(KinetixWaitForFrameTimeoutString, asynParamInt32, &KinetixWaitForFrameTimeout);
+    createParam(KinetixReadoutModeString, asynParamOctet, &KinetixReadoutMode);
     createParam(KinetixApplyReadoutModeString, asynParamInt32, &KinetixApplyReadoutMode);
     createParam(KinetixModeValidString, asynParamInt32, &KinetixModeValid);
     createParam(KinetixReadoutPortDescString,             asynParamOctet,   &KinetixReadoutPortDesc);
@@ -760,6 +772,10 @@ void ADKinetix::acquisitionThread()
     }
 
     getDoubleParam(ADAcquireTime, &exposureTime);
+    getDoubleParam(ADAcquirePeriod, &acquirePeriod);
+    double deadtime = 0;
+    if(exposureTime < acquirePeriod) deadtime = acquirePeriod - exposureTime;
+
     getIntegerParam(ADTriggerMode, &triggerMode);
     getIntegerParam(ADImageMode, &acquisitionMode);
     getIntegerParam(ADNumImages, &targetNumImages);
@@ -874,6 +890,10 @@ void ADKinetix::acquisitionThread()
 
             // Sends image to the ArrayDataPV
             getAttributes(pArray->pAttributeList);
+
+            // If we have a longer acq period than exposure, wait for difference
+            if (deadtime > 0) epicsThreadSleep(deadtime);
+
             doCallbacksGenericPointer(pArray, NDArrayData, 0);
 
             if (acquisitionMode == ADImageSingle)
@@ -1004,6 +1024,15 @@ asynStatus ADKinetix::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
     /* Set the parameter and readback in the parameter library.  This may be overwritten when we read back the
      * status at the end, but that's OK */
     status = setDoubleParam(function, value);
+
+    if (function == ADAcquireTime) {
+        // if exposure time is set to something longer than acquire period, change acquire period to be the same
+        double period;
+        getDoubleParam(ADAcquirePeriod, &period);
+        if (value > period){
+            setDoubleParam(ADAcquirePeriod, value);
+        }
+    }
 
     /* Do callbacks so higher layers see any changes */
     callParamCallbacks();
