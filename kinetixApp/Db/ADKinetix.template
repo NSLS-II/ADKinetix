@@ -34,7 +34,7 @@ record(bo, "$(P)$(R)StopAcqOnTimeout")
     field(ZNAM, "No")
     field(ONAM, "Yes")
     field(VAL, "0")
-    field(PINI, "Yes")
+    field(PINI, "YES")
 }
 
 
@@ -53,7 +53,7 @@ record(ao, "$(P)$(R)WaitForFrameTO")
     field(DTYP, "asynInt32")
     field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_WAIT_FOR_FRAME_TO")
     field(VAL, "500")
-    field(PINI, "Yes")
+    field(PINI, "YES")
 }
 
 record(ai, "$(P)$(R)WaitForFrameTO_RBV")
@@ -86,7 +86,7 @@ record(mbbo, "$(P)$(R)ReadoutPortIdx")
     field(THST, "Readout Port 4")
     field(THVL, "3")
     field(VAL, "0")
-    field(PINI, "Yes")
+    field(PINI, "YES")
 }
 
 
@@ -126,7 +126,7 @@ record(mbbo, "$(P)$(R)SpeedIdx")
     field(THST, "Speed Index 4")
     field(THVL, "3")
     field(VAL, "0")
-    field(PINI, "Yes")
+    field(PINI, "YES")
 }
 
 
@@ -166,7 +166,7 @@ record(mbbo, "$(P)$(R)GainIdx")
     field(THST, "Gain Index 4")
     field(THVL, "3")
     field(VAL, "0")
-    field(PINI, "Yes")
+    field(PINI, "YES")
 }
 
 record(mbbi, "$(P)$(R)GainIdx_RBV")
