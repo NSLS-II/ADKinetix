@@ -106,7 +106,7 @@ record(mbbi, "$(P)$(R)ReadoutPortIdx_RBV")
 }
 
 record(stringin, "$(P)$(R)ReadoutPortName_RBV"){
-    field(DTYP, "asynOctet")
+    field(DTYP, "asynOctetRead")
     field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_READOUT_PORT_DESC")
     field(SCAN, "I/O Intr")
 }
@@ -146,7 +146,7 @@ record(mbbi, "$(P)$(R)SpeedIdx_RBV")
 }
 
 record(stringin, "$(P)$(R)SpeedDesc_RBV"){
-    field(DTYP, "asynOctet")
+    field(DTYP, "asynOctetRead")
     field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_SPEED_DESC")
     field(SCAN, "I/O Intr")
 }
@@ -185,13 +185,14 @@ record(mbbi, "$(P)$(R)GainIdx_RBV")
 }
 
 record(stringin, "$(P)$(R)GainDesc_RBV"){
-    field(DTYP, "asynOctet")
+    field(DTYP, "asynOctetRead")
     field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_GAIN_DESC")
     field(SCAN, "I/O Intr")
 }
 
 
 record(bo, "$(P)$(R)ApplyReadoutMode") {
+    field(DTYP, "asynInt32")
     field(DESC, "Apply currently selected operating mode")
     field(OUT, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_APPLY_MODE")
     field(ZNAM, "Cancel")
@@ -200,6 +201,7 @@ record(bo, "$(P)$(R)ApplyReadoutMode") {
 }
 
 record(bi, "$(P)$(R)ReadoutModeValid_RBV") {
+    field(DTYP, "asynInt32")
     field(DESC, "Apply currently selected operating mode")
     field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KINETIX_MODE_VALID")
     field(ZNAM, "Invalid")
