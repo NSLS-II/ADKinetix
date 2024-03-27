@@ -2,7 +2,7 @@
 # Jakub Wlodek
 # 26 Mar 2024
 
-
+include "ADBase.template"
 
 
 # Redefine some record signatures to overwrite those included with ADBase
