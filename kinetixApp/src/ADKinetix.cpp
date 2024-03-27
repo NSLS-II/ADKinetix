@@ -727,7 +727,11 @@ void ADKinetix::updateReadoutPortDesc()
     }
     if (valid == 1 && this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains.size() > gainIdx)
     {
-        setStringParam(KinetixGainDesc, this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains[gainIdx].name.c_str());
+        char gainDescStr[40];
+        snprintf(gainDescStr, 40, "%s, %d bpp", 
+                 this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains[gainIdx].name.c_str(),
+                 this->cameraContext->speedTable[readoutPortIdx].speeds[speedIdx].gains[gainIdx].bitDepth);
+        setStringParam(KinetixGainDesc, gainDescStr);
     }
     else
     {
