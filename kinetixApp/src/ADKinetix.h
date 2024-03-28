@@ -56,6 +56,7 @@ static const char *driverName = "ADKinetix";
 
 #define KinetixStopAcqOnTimeoutString       "KINETIX_STOP_ACQ_ON_TO"
 #define KinetixWaitForFrameTimeoutString    "KINETIX_WAIT_FOR_FRAME_TO"
+#define KinetixCommInterfaceString "KINETIX_INTERFACE"
 
 #define KinetixReadoutModeString            "KINETIX_READOUT_MODE"
 #define KinetixApplyReadoutModeString       "KINETIX_APPLY_MODE"
@@ -74,6 +75,21 @@ typedef enum {
     KINETIX_TRIG_GATE = 2,
 } KINETIX_TRIGGER_MODE;
 
+
+typedef enum {
+    KINETIX_INTF_UNKNOWN    = 0,
+    KINETIX_INTF_USB        = 1,
+    KINETIX_INTF_USB_1_1    = 2,
+    KINETIX_INTF_USB_2_0    = 3,
+    KINETIX_INTF_USB_3_0    = 4,
+    KINETIX_INTF_USB_3_1    = 5,
+    KINETIX_INTF_PCIE       = 6,
+    KINETIX_INTF_PCIE_x1    = 7,
+    KINETIX_INTF_PCIE_x4    = 8,
+    KINETIX_INTF_PCIE_x8    = 9,
+    KINETIX_INTF_VIRTUAL    = 10,
+    KINETIX_INTF_ETHERNET   = 11,
+} KINETIX_COMM_INTERFACE;
 
 
 class ADKinetix : public ADDriver
@@ -99,6 +115,8 @@ protected:
     int KinetixFanSpeed;
     int KinetixStopAcqOnTimeout;
     int KinetixWaitForFrameTimeout;
+
+    int KinetixCommInterface;
 
     int KinetixReadoutMode;
     int KinetixApplyReadoutMode;

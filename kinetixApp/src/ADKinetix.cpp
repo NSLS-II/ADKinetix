@@ -491,19 +491,20 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
     const char *functionName = "ADKinetix";
     asynStatus status = asynSuccess;
 
-    createParam(KinetixTemperatureString,             asynParamFloat64,   &KinetixTemperature);
-    createParam(KinetixFanSpeedString,                 asynParamInt32,   &KinetixFanSpeed);
-    createParam(KinetixStopAcqOnTimeoutString, asynParamInt32, &KinetixStopAcqOnTimeout);
-    createParam(KinetixWaitForFrameTimeoutString, asynParamInt32, &KinetixWaitForFrameTimeout);
-    createParam(KinetixReadoutModeString, asynParamOctet, &KinetixReadoutMode);
-    createParam(KinetixApplyReadoutModeString, asynParamInt32, &KinetixApplyReadoutMode);
-    createParam(KinetixModeValidString, asynParamInt32, &KinetixModeValid);
-    createParam(KinetixReadoutPortDescString,             asynParamOctet,   &KinetixReadoutPortDesc);
-    createParam(KinetixReadoutPortIdxString,             asynParamInt32,   &KinetixReadoutPortIdx);
-    createParam(KinetixSpeedDescString,             asynParamOctet,   &KinetixSpeedDesc);
-    createParam(KinetixSpeedIdxString,             asynParamInt32,   &KinetixSpeedIdx);
-    createParam(KinetixGainIdxString,             asynParamInt32,   &KinetixGainIdx);
-    createParam(KinetixGainDescString,             asynParamOctet,   &KinetixGainDesc);
+    createParam(KinetixTemperatureString,           asynParamFloat64,   &KinetixTemperature);
+    createParam(KinetixFanSpeedString,              asynParamInt32,     &KinetixFanSpeed);
+    createParam(KinetixCommInterfaceString,         asynParamInt32,     &KinetixCommInterface);
+    createParam(KinetixStopAcqOnTimeoutString,      asynParamInt32,     &KinetixStopAcqOnTimeout);
+    createParam(KinetixWaitForFrameTimeoutString,   asynParamInt32,     &KinetixWaitForFrameTimeout);
+    createParam(KinetixReadoutModeString,           asynParamOctet,     &KinetixReadoutMode);
+    createParam(KinetixApplyReadoutModeString,      asynParamInt32,     &KinetixApplyReadoutMode);
+    createParam(KinetixModeValidString,             asynParamInt32,     &KinetixModeValid);
+    createParam(KinetixReadoutPortDescString,       asynParamOctet,     &KinetixReadoutPortDesc);
+    createParam(KinetixReadoutPortIdxString,        asynParamInt32,     &KinetixReadoutPortIdx);
+    createParam(KinetixSpeedDescString,             asynParamOctet,     &KinetixSpeedDesc);
+    createParam(KinetixSpeedIdxString,              asynParamInt32,     &KinetixSpeedIdx);
+    createParam(KinetixGainIdxString,               asynParamInt32,     &KinetixGainIdx);
+    createParam(KinetixGainDescString,              asynParamOctet,     &KinetixGainDesc);
 
     if (!pl_pvcam_init())
     {
@@ -566,6 +567,25 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 pl_get_param(this->cameraContext->hcam, PARAM_PRODUCT_NAME, ATTR_CURRENT, (void *)modelStr);
                 setStringParam(ADModel, modelStr);
 
+                // get information about the interface used to communicate with the camera.
+                KINETIX_COMM_INTERFACE interface = KINETIX_INTF_UNKNOWN;
+
+                int32 interfaceId;
+                pl_get_param(this->cameraContext->hcam, PARAM_CAM_INTERFACE_TYPE, ATTR_CURRENT, (void*) &interface);
+                
+                if(interface == PL_CAM_IFC_TYPE_ETHERNET) interface = KINETIX_INTF_ETHERNET;
+                else if (interface == PL_CAM_IFC_TYPE_VIRTUAL) interface = KINETIX_INTF_VIRTUAL;
+                else if (interface == PL_CAM_IFC_TYPE_USB_1_1) interface = KINETIX_INTF_USB_1_1;
+                else if (interface == PL_CAM_IFC_TYPE_USB_2_0) interface = KINETIX_INTF_USB_2_0;
+                else if (interface == PL_CAM_IFC_TYPE_USB_3_0) interface = KINETIX_INTF_USB_3_0;
+                else if (interface == PL_CAM_IFC_TYPE_USB_3_1) interface = KINETIX_INTF_USB_3_1;
+                else if (interface == PL_CAM_IFC_TYPE_PCIE_X1) interface = KINETIX_INTF_PCIE_x1;
+                else if (interface == PL_CAM_IFC_TYPE_PCIE_X4) interface = KINETIX_INTF_PCIE_x4;
+                else if (interface == PL_CAM_IFC_TYPE_PCIE_X8) interface = KINETIX_INTF_PCIE_x8;
+                else if (interface == PL_CAM_IFC_TYPE_PCIE) interface = KINETIX_INTF_PCIE;
+
+                setIntegerParam(KinetixCommInterface, interface);
+
                 pl_get_param(this->cameraContext->hcam, PARAM_SER_SIZE, ATTR_CURRENT, (void *)&this->cameraContext->sensorResX);
                 pl_get_param(this->cameraContext->hcam, PARAM_PAR_SIZE, ATTR_CURRENT, (void *)&this->cameraContext->sensorResY);
 
@@ -583,6 +603,8 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 setIntegerParam(NDColorMode, NDColorModeMono);   // Only mono modes currently supported
                 callParamCallbacks();
                 updateCameraRegion();
+
+
 
                 // Reset any pre-configured post-processing setup.
                 pl_pp_reset(this->cameraContext->hcam);
