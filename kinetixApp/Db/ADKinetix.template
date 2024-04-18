@@ -27,6 +27,46 @@ record(mbbi,"$(P)$(R)TriggerMode_RBV") {
     field(TWST,"Exp. Gate")
 }
 
+
+record(ao, "$(P)$(R)AcquireTime")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynFloat64")
+   field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))ACQ_TIME")
+   field(PREC, "5")
+   field(VAL,  "1.0")
+   info(autosaveFields, "VAL")
+}
+
+record(ai, "$(P)$(R)AcquireTime_RBV")
+{
+   field(DTYP, "asynFloat64")
+   field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))ACQ_TIME")
+   field(PREC, "5")
+   field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)AcquirePeriod")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynFloat64")
+   field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))ACQ_PERIOD")
+   field(PREC, "5")
+   field(VAL,  "0")
+   info(autosaveFields, "VAL")
+}
+
+record(ai, "$(P)$(R)AcquirePeriod_RBV")
+{
+   field(DTYP, "asynFloat64")
+   field(INP,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))ACQ_PERIOD")
+   field(PREC, "5")
+   field(SCAN, "I/O Intr")
+}
+
+
+##### End overridden records
+
 record(bo, "$(P)$(R)StopAcqOnTimeout")
 {
     field(DTYP, "asynInt32")
