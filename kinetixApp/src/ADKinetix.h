@@ -2,7 +2,7 @@
 #define ADKINETIX_H
 
 // version numbers
-#define ADKINETIX_VERSION      0
+#define ADKINETIX_VERSION      1
 #define ADKINETIX_REVISION     0
 #define ADKINETIX_MODIFICATION 0
 
@@ -44,10 +44,6 @@
 
 static const char *driverName = "ADKinetix";
 
-
-/**
- * 
- */
 
 // Temperature and Fan signals
 #define KinetixTemperatureString             "KINETIX_TEMP"

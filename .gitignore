@@ -8,3 +8,4 @@ dbd/
 envPaths
 dllPath.bat
 *.sav*
+include/
