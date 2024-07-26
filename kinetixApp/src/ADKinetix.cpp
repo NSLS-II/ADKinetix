@@ -555,7 +555,7 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 uns16 fwVersion;
                 pl_get_param(this->cameraContext->hcam, PARAM_CAM_FW_VERSION, ATTR_CURRENT, (void *)&fwVersion);
                 snprintf(fwVersionStr, 40, "%d.%d", (fwVersion >> 8) & 0xFF, (fwVersion >> 0) & 0xFF);
-                setStringParam(ADFirmwareVersion, fwVersionStr);
+                setStringParam(ADFirmwareVersion, fwVersionStr); 
 
                 pl_get_param(this->cameraContext->hcam, PARAM_CAMERA_PART_NUMBER, ATTR_CURRENT, (void *)&serialNumber);
                 snprintf(serialNumberStr, 40, "%d", serialNumber);
@@ -567,24 +567,34 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int ma
                 pl_get_param(this->cameraContext->hcam, PARAM_PRODUCT_NAME, ATTR_CURRENT, (void *)modelStr);
                 setStringParam(ADModel, modelStr);
 
+                // Set minimum exposure resolution to 1 us
+                int32 minExpRes = EXP_RES_ONE_MICROSEC;
+                if(PV_OK != pl_set_param(this->cameraContext->hcam, PARAM_EXP_RES, (void*) &minExpRes)){
+                    ERR("Failed to configure minimum exposure resolution to 1 us!");
+                } else {
+                    LOG("Set minimum exposure time to one microsecond");
+                }
+                
                 // get information about the interface used to communicate with the camera.
+                
                 KINETIX_COMM_INTERFACE interface = KINETIX_INTF_UNKNOWN;
 
                 int32 interfaceId;
-                pl_get_param(this->cameraContext->hcam, PARAM_CAM_INTERFACE_TYPE, ATTR_CURRENT, (void*) &interface);
+                pl_get_param(this->cameraContext->hcam, PARAM_CAM_INTERFACE_TYPE, ATTR_CURRENT, (void*) &interfaceId);
                 
-                if(interface == PL_CAM_IFC_TYPE_ETHERNET) interface = KINETIX_INTF_ETHERNET;
-                else if (interface == PL_CAM_IFC_TYPE_VIRTUAL) interface = KINETIX_INTF_VIRTUAL;
-                else if (interface == PL_CAM_IFC_TYPE_USB_1_1) interface = KINETIX_INTF_USB_1_1;
-                else if (interface == PL_CAM_IFC_TYPE_USB_2_0) interface = KINETIX_INTF_USB_2_0;
-                else if (interface == PL_CAM_IFC_TYPE_USB_3_0) interface = KINETIX_INTF_USB_3_0;
-                else if (interface == PL_CAM_IFC_TYPE_USB_3_1) interface = KINETIX_INTF_USB_3_1;
-                else if (interface == PL_CAM_IFC_TYPE_PCIE_X1) interface = KINETIX_INTF_PCIE_x1;
-                else if (interface == PL_CAM_IFC_TYPE_PCIE_X4) interface = KINETIX_INTF_PCIE_x4;
-                else if (interface == PL_CAM_IFC_TYPE_PCIE_X8) interface = KINETIX_INTF_PCIE_x8;
-                else if (interface == PL_CAM_IFC_TYPE_PCIE) interface = KINETIX_INTF_PCIE;
+                if(interfaceId == PL_CAM_IFC_TYPE_ETHERNET) interface = KINETIX_INTF_ETHERNET;
+                else if (interfaceId == PL_CAM_IFC_TYPE_VIRTUAL) interface = KINETIX_INTF_VIRTUAL;
+                else if (interfaceId == PL_CAM_IFC_TYPE_USB_1_1) interface = KINETIX_INTF_USB_1_1;
+                else if (interfaceId == PL_CAM_IFC_TYPE_USB_2_0) interface = KINETIX_INTF_USB_2_0;
+                else if (interfaceId == PL_CAM_IFC_TYPE_USB_3_0) interface = KINETIX_INTF_USB_3_0;
+                else if (interfaceId == PL_CAM_IFC_TYPE_USB_3_1) interface = KINETIX_INTF_USB_3_1;
+                else if (interfaceId == PL_CAM_IFC_TYPE_PCIE_X1) interface = KINETIX_INTF_PCIE_x1;
+                else if (interfaceId == PL_CAM_IFC_TYPE_PCIE_X4) interface = KINETIX_INTF_PCIE_x4;
+                else if (interfaceId == PL_CAM_IFC_TYPE_PCIE_X8) interface = KINETIX_INTF_PCIE_x8;
+                else if (interfaceId == PL_CAM_IFC_TYPE_PCIE) interface = KINETIX_INTF_PCIE;
 
                 setIntegerParam(KinetixCommInterface, interface);
+                
 
                 pl_get_param(this->cameraContext->hcam, PARAM_SER_SIZE, ATTR_CURRENT, (void *)&this->cameraContext->sensorResX);
                 pl_get_param(this->cameraContext->hcam, PARAM_PAR_SIZE, ATTR_CURRENT, (void *)&this->cameraContext->sensorResY);
@@ -832,7 +842,7 @@ void ADKinetix::acquisitionThread()
 
     if (acquisitionMode == ADImageSingle)
     {
-        pl_exp_setup_seq(this->cameraContext->hcam, 1, 1, &this->cameraContext->region, pvcamExposureMode, (uns32)(exposureTime * 1000), &frameBufferSize);
+        pl_exp_setup_seq(this->cameraContext->hcam, 1, 1, &this->cameraContext->region, pvcamExposureMode, (uns32)(exposureTime * 1000000), &frameBufferSize);
 
         this->frameBuffer = (uns8 *)calloc(1, (size_t)frameBufferSize);
         LOG_ARGS("Allocated frame buffer of size %d...", frameBufferSize);
@@ -845,7 +855,7 @@ void ADKinetix::acquisitionThread()
     }
     else
     {
-        pl_exp_setup_cont(this->cameraContext->hcam, 1, &this->cameraContext->region, pvcamExposureMode, (uns32)(exposureTime * 1000), &frameBufferSize, circBuffMode);
+        pl_exp_setup_cont(this->cameraContext->hcam, 1, &this->cameraContext->region, pvcamExposureMode, (uns32)(exposureTime * 1000000), &frameBufferSize, circBuffMode);
 
         this->frameBuffer = (uns8 *)calloc(KINETIX_CIRC_BUFF_SIZE, (size_t)frameBufferSize); // Allocate memory for circular buffer
         LOG_ARGS("Allocated circular buffer for %d frames. Total size: %d bytes.", KINETIX_CIRC_BUFF_SIZE, frameBufferSize * KINETIX_CIRC_BUFF_SIZE);
