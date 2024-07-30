@@ -1111,7 +1111,7 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value) {
             selectSpeedTableMode();
         }
     } else if (function == KTX_MinExpRes) {
-        setMinExpRes((KTX_MIN_EXP_RES) currentExpRes, (KTX_MIN_EXP_RES) value);
+        status = setMinExpRes((KTX_MIN_EXP_RES) currentExpRes, (KTX_MIN_EXP_RES) value);
     } else if (function == ADBinX || function == ADBinY || function == ADMinX ||
                function == ADMinY || function == ADSizeX || function == ADSizeY) {
         // If we change binning or image dims, update the internal region state
