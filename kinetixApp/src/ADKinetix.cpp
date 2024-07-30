@@ -176,7 +176,7 @@ bool ADKinetix::readEnumeration(int16 hcam, NVPC *pNvpc, uns32 paramID, const ch
         // Allocate the destination string
         char *name = new (std::nothrow) char[strLength];
         if (!name) {
-            printf("Unable to allocate memory for %s enum item name\n", paramName);
+            ERR_ARGS("Unable to allocate memory for %s enum item name\n", paramName);
             return false;
         }
 
@@ -317,7 +317,7 @@ bool ADKinetix::getSpeedTable() {
     rs_bool isGainNameAvailable;
     if (PV_OK != pl_get_param(this->cameraContext->hcam, PARAM_GAIN_NAME, ATTR_AVAIL,
                               (void *)&isGainNameAvailable)) {
-        printf("Error reading ATTR_AVAIL of PARAM_GAIN_NAME\n");
+        ERR("Error reading ATTR_AVAIL of PARAM_GAIN_NAME\n");
         return false;
     }
     const bool isGainNameSupported = isGainNameAvailable != FALSE;
@@ -1157,18 +1157,18 @@ ADKinetix::~ADKinetix() {
     this->monitoringActive = false;
     printf("Shutting down monitor thread...\n");
     epicsThreadMustJoin(this->monitorThreadId);
-    printf("Done.\n");
 
     // close camera if open
     if (this->cameraContext != NULL && this->cameraContext->isCamOpen) {
+        printf("Closing camera...\n");
         pl_cam_close(this->cameraContext->hcam);
-        printf("Closed camera...\n");
     }
 
     // delete camera context object
     delete this->cameraContext;
 
     // uninitialize SDK
+    printf("Uninitializing SDK...\n");
     if (!pl_pvcam_uninit()) reportKinetixError(functionName);
     printf("Done.\n");
 }
