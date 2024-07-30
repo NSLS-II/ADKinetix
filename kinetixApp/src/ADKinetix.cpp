@@ -519,6 +519,7 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName)
     createParam(KTX_CommInterfaceString, asynParamInt32, &KTX_CommInterface);
     createParam(KTX_StopAcqOnTimeoutString, asynParamInt32, &KTX_StopAcqOnTimeout);
     createParam(KTX_WaitForFrameTimeoutString, asynParamInt32, &KTX_WaitForFrameTimeout);
+    createParam(KTX_MinExpResString, asynParamInt32, &KTX_MinExpRes);
     createParam(KTX_ReadoutModeString, asynParamOctet, &KTX_ReadoutMode);
     createParam(KTX_ApplyReadoutModeString, asynParamInt32, &KTX_ApplyReadoutMode);
     createParam(KTX_ModeValidString, asynParamInt32, &KTX_ModeValid);
@@ -594,14 +595,8 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName)
                              (void *)modelStr);
                 setStringParam(ADModel, modelStr);
 
-                // Set minimum exposure resolution to 1 us
-                int32 minExpRes = EXP_RES_ONE_MICROSEC;
-                if (PV_OK !=
-                    pl_set_param(this->cameraContext->hcam, PARAM_EXP_RES, (void *)&minExpRes)) {
-                    ERR("Failed to configure minimum exposure resolution to 1 us!");
-                } else {
-                    INFO("Set minimum exposure time to one microsecond");
-                }
+                // Attempt to switch to microsecond min exposure resolution
+                setMinExpRes(KTX_MIN_EXP_RES_MS, KTX_MIN_EXP_RES_US);
 
                 // Get info about the interface used to communicate with the camera.
                 KTX_COMM_INTF interface = KTX_INTF_UNKNOWN;
@@ -1031,6 +1026,45 @@ void ADKinetix::acquisitionThread() {
 }
 
 /**
+ * @brief Function for setting minimum exposure resolution
+ * 
+ * @param currentExpRes Current minimum exposure resolution
+ * @param newExpRes Target new minimum exposure resolution
+ * @return asynSuccess if min exposure res was accepted, asynError otherwise.
+ */
+asynStatus ADKinetix::setMinExpRes(KTX_MIN_EXP_RES currentExpRes, KTX_MIN_EXP_RES newExpRes){
+    const char* functionName = "setMinExpRes";
+    asynStatus status = asynSuccess;
+
+    // Convert EPICS min exp res to pvcam type
+    int32 minExpRes;
+    switch(newExpRes){
+        case KTX_MIN_EXP_RES_S:
+            minExpRes = EXP_RES_ONE_SEC;
+            break;
+        case KTX_MIN_EXP_RES_MS:
+            minExpRes = EXP_RES_ONE_MILLISEC;
+            break;
+        case KTX_MIN_EXP_RES_US:
+            minExpRes = EXP_RES_ONE_MICROSEC;
+            break;
+    }
+
+    // Attempt to set requested minimum exposure resolution
+    if (PV_OK !=
+        pl_set_param(this->cameraContext->hcam, PARAM_EXP_RES, (void *) &minExpRes)) {
+        ERR_ARGS("Failed to configure minimum exposure resolution to %f second(s)!", (double) (1 / pow(1000.0, (double) newExpRes)));
+        setIntegerParam(KTX_MinExpRes, currentExpRes);
+        status = asynError;
+    } else {
+        INFO_ARGS("Set minimum exposure time to %f second(s)!", (double) (1 / pow(1000.0, (double) newExpRes)));
+        setIntegerParam(KTX_MinExpRes, newExpRes);
+    }
+    callParamCallbacks();
+    return status;
+}
+
+/**
  * @brief Override of ADDriver function - performs callbacks on write events to int PVs
  *
  * @param pasynUser Pointer to record asynUser instance
@@ -1040,8 +1074,11 @@ void ADKinetix::acquisitionThread() {
 asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value) {
     const char *functionName = "writeInt32";
     int function = pasynUser->reason;
-    int detectorStatus;
+    int currentExpRes;
     asynStatus status = asynSuccess;
+
+    // Need to know current exp res when switching in case we cannot update
+    getIntegerParam(KTX_MinExpRes, &currentExpRes);
 
     /* Set the parameter and readback in the parameter library.  This may be overwritten when we
      * read back the status at the end, but that's OK */
@@ -1072,6 +1109,8 @@ asynStatus ADKinetix::writeInt32(asynUser *pasynUser, epicsInt32 value) {
         } else {
             selectSpeedTableMode();
         }
+    } else if (function == KTX_MinExpRes) {
+        setMinExpRes((KTX_MIN_EXP_RES) currentExpRes, (KTX_MIN_EXP_RES) value);
     } else if (function == ADBinX || function == ADBinY || function == ADMinX ||
                function == ADMinY || function == ADSizeX || function == ADSizeY) {
         // If we change binning or image dims, update the internal region state
