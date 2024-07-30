@@ -539,10 +539,15 @@ ADKinetix::ADKinetix(int deviceIndex, const char *portName)
     uns16 sdkVersion;
     int32 serialNumber;
     pl_pvcam_get_ver(&sdkVersion);
-    char sdkVersionStr[40], fwVersionStr[40], modelStr[40], vendorStr[40], serialNumberStr[40];
+    char sdkVersionStr[40], driverVersionStr[40], fwVersionStr[40], modelStr[40], vendorStr[40], serialNumberStr[40];
     snprintf(sdkVersionStr, 40, "%d.%d.%d", (sdkVersion >> 8 & 0xFF), (sdkVersion >> 4 & 0xF),
              (sdkVersion >> 0 & 0xF));
     setStringParam(ADSDKVersion, sdkVersionStr);
+
+    // Track current version of the driver
+    snprintf(driverVersionStr, 40, "%d.%d.%d", 
+            ADKINETIX_VERSION, ADKINETIX_REVISION, ADKINETIX_MODIFICATION);
+    setStringParam(NDDriverVersion, driverVersionStr);
 
     // Identify number of connected cameras
     int16 numCameras = 0;
