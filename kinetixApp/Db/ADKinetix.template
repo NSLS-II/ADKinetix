@@ -47,7 +47,7 @@ record(ai, "$(P)$(R)AcquireTime_RBV") {
 }
 
 
-record(ao, "$(P)$(R)AcquirePeriod"){
+record(ao, "$(P)$(R)AcquirePeriod") {
    field(PINI, "YES")
    field(DTYP, "asynFloat64")
    field(OUT,  "@asyn($(PORT),$(ADDR=0),$(TIMEOUT=1))ACQ_PERIOD")
