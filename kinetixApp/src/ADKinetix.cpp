@@ -101,11 +101,11 @@ bool ADKinetix::waitForEofEvent(uns32 timeoutMs) {
         lock, std::chrono::milliseconds(timeoutMs),
         [ctx]() { return ctx->eofEvent.flag || ctx->threadAbortFlag; });
     if (!this->acquisitionActive) {
-        printf("Processing aborted on camera %d\n", this->cameraContext->hcam);
+        DEBUG_ARGS("Acquisition completed on camera %d\n", this->cameraContext->hcam);
         return false;
     }
     if (!this->cameraContext->eofEvent.flag) {
-        printf("Camera %d timed out waiting for a frame\n", this->cameraContext->hcam);
+        WARN_ARGS("Camera %d timed out waiting for a frame\n", this->cameraContext->hcam);
         return false;
     }
     this->cameraContext->eofEvent.flag = false;  // Reset flag
