@@ -844,7 +844,7 @@ void ADKinetix::updateReadoutPortDesc() {
 void ADKinetix::acquisitionThread() {
     const char *functionName = "acquisitionThread";
     int acquiring, acquisitionMode, targetNumImages, collectedImages, triggerMode, stopAcqOnTO,
-        waitForFrameTO, modeValid;
+        waitForFrameTO, modeValid, minExpRes;
     bool eofSuccess;
     double exposureTime, acquirePeriod;
     int16 pvcamExposureMode;
@@ -876,6 +876,7 @@ void ADKinetix::acquisitionThread() {
     getIntegerParam(ADNumImages, &targetNumImages);
     getIntegerParam(KTX_StopAcqOnTimeout, &stopAcqOnTO);
     getIntegerParam(KTX_WaitForFrameTimeout, &waitForFrameTO);
+    getIntegerParam(KTX_MinExpRes, &minExpRes);
 
     // Convert EPICS selected trigger mode to PvCam format
     if (triggerMode == KTX_TRIG_INTERNAL)
@@ -897,7 +898,7 @@ void ADKinetix::acquisitionThread() {
     // In single mode, use exposure setup API call
     if (acquisitionMode == ADImageSingle) {
         pl_exp_setup_seq(this->cameraContext->hcam, 1, 1, &this->cameraContext->region,
-                         pvcamExposureMode, (uns32)(exposureTime * 1000000), &frameBufferSize);
+                         pvcamExposureMode, (uns32)(exposureTime * pow(1000, minExpRes)), &frameBufferSize);
 
         // Allocate frame buffer
         this->frameBuffer = (uns8 *)calloc(1, (size_t)frameBufferSize);
@@ -910,7 +911,7 @@ void ADKinetix::acquisitionThread() {
     } else {
         // In continuous mode set up cont acq w/ circ buffer
         pl_exp_setup_cont(this->cameraContext->hcam, 1, &this->cameraContext->region,
-                          pvcamExposureMode, (uns32)(exposureTime * 1000000), &frameBufferSize,
+                          pvcamExposureMode, (uns32)(exposureTime * pow(1000, minExpRes)), &frameBufferSize,
                           circBuffMode);
 
         // Allocate entire circular buffer
