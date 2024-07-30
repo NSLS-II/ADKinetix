@@ -16,7 +16,7 @@
 
 // Driver version numbers
 #define ADKINETIX_VERSION 1
-#define ADKINETIX_REVISION 0
+#define ADKINETIX_REVISION 1
 #define ADKINETIX_MODIFICATION 0
 
 // Standard Includes
