@@ -94,6 +94,8 @@ static void exitCallbackC(void *drvPvt) {
  * @return false if acquisition was aborted or timed out
  */
 bool ADKinetix::waitForEofEvent(uns32 timeoutMs) {
+    const char* functionName = "waitForEofEvent";
+
     std::unique_lock<std::mutex> lock(this->cameraContext->eofEvent.mutex);
     CameraContext *ctx =
         this->cameraContext;  // For lambda we need temporary local reference to ctx pointer
