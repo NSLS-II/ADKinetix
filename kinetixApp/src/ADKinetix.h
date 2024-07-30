@@ -1,132 +1,143 @@
+/**
+ * ADKinetix.h
+ *
+ * ADKinetix EPICS areaDetector driver header file
+ *
+ * Author: Jakub Wlodek
+ *
+ * Created: 10-Mar-2024
+ * Last Updated: 26-Jul-2024
+ * Copyright (c): Brookhaven National Laboratory 2024
+ */
+
+// Include guard
 #ifndef ADKINETIX_H
 #define ADKINETIX_H
 
-// version numbers
-#define ADKINETIX_VERSION      1
-#define ADKINETIX_REVISION     0
+// Driver version numbers
+#define ADKINETIX_VERSION 1
+#define ADKINETIX_REVISION 0
 #define ADKINETIX_MODIFICATION 0
 
-
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <math.h>
-#include <stdio.h>
+// Standard Includes
 #include <errno.h>
+#include <math.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <mutex>
-#include <condition_variable>
 
-#include <epicsTime.h>
-#include <epicsThread.h>
-#include <epicsEvent.h>
-#include <epicsMutex.h>
-#include <epicsString.h>
-#include <epicsStdio.h>
-#include <epicsMutex.h>
+#include <condition_variable>
+#include <mutex>
+
+// EPICS includes
 #include <cantProceed.h>
+#include <epicsEvent.h>
 #include <epicsExit.h>
-#include <iocsh.h>
 #include <epicsExport.h>
+#include <epicsMutex.h>
+#include <epicsStdio.h>
+#include <epicsString.h>
+#include <epicsThread.h>
+#include <epicsTime.h>
+#include <iocsh.h>
 
 #include "ADDriver.h"
 
-
-/* PvCam includes */
+// PvCam includes
 #include "master.h"
 #include "pvcam.h"
 
-// PVCam examples helper data structures
+// Helper data structure definitions
 #include "ADKinetixDS.h"
 
-// Size of the circular buffer
-#define KINETIX_CIRC_BUFF_SIZE 50
+// Size of the continuous acquisition circular buffer
+#define KTX_CIRC_BUFF_SIZE 50
 
-static const char *driverName = "ADKinetix";
-
+// Driver name
+static const char* driverName = "ADKinetix";
 
 // Temperature and Fan signals
-#define KinetixTemperatureString             "KINETIX_TEMP"
-#define KinetixFanSpeedString                "KINETIX_FAN_SPEED"
+#define KTX_TemperatureString "KTX_TEMP"
+#define KTX_FanSpeedString "KTX_FAN_SPEED"
 
+// Acquisition new frame timeout signals
+#define KTX_StopAcqOnTimeoutString "KTX_STOP_ACQ_ON_TO"
+#define KTX_WaitForFrameTimeoutString "KTX_WAIT_FOR_FRAME_TO"
 
-#define KinetixStopAcqOnTimeoutString       "KINETIX_STOP_ACQ_ON_TO"
-#define KinetixWaitForFrameTimeoutString    "KINETIX_WAIT_FOR_FRAME_TO"
-#define KinetixCommInterfaceString "KINETIX_INTERFACE"
+// Communication interface signal
+#define KTX_CommInterfaceString "KTX_INTERFACE"
 
-#define KinetixReadoutModeString            "KINETIX_READOUT_MODE"
-#define KinetixApplyReadoutModeString       "KINETIX_APPLY_MODE"
-#define KinetixModeValidString              "KINETIX_MODE_VALID"
-#define KinetixReadoutPortIdxString          "KINETIX_READOUT_PORT_IDX"
-#define KinetixReadoutPortDescString          "KINETIX_READOUT_PORT_DESC"
-#define KinetixSpeedIdxString             "KINETIX_SPEED_IDX"
-#define KinetixSpeedDescString              "KINETIX_SPEED_DESC"
-#define KinetixGainIdxString             "KINETIX_GAIN_IDX"
-#define KinetixGainDescString             "KINETIX_GAIN_DESC"
+// Readout mode signals
+#define KTX_ReadoutModeString "KTX_READOUT_MODE"
+#define KTX_ApplyReadoutModeString "KTX_APPLY_MODE"
+#define KTX_ModeValidString "KTX_MODE_VALID"
+#define KTX_ReadoutPortIdxString "KTX_READOUT_PORT_IDX"
+#define KTX_ReadoutPortDescString "KTX_READOUT_PORT_DESC"
+#define KTX_SpeedIdxString "KTX_SPEED_IDX"
+#define KTX_SpeedDescString "KTX_SPEED_DESC"
+#define KTX_GainIdxString "KTX_GAIN_IDX"
+#define KTX_GainDescString "KTX_GAIN_DESC"
 
-
+// Three supported trigger modes
 typedef enum {
-    KINETIX_TRIG_INTERNAL = 0,
-    KINETIX_TRIG_EDGE = 1,
-    KINETIX_TRIG_GATE = 2,
-} KINETIX_TRIGGER_MODE;
+    KTX_TRIG_INTERNAL = 0,
+    KTX_TRIG_EDGE = 1,
+    KTX_TRIG_GATE = 2,
+} KTX_TRIG_MODE;
 
-
+// Supported interface modes
 typedef enum {
-    KINETIX_INTF_UNKNOWN    = 0,
-    KINETIX_INTF_USB        = 1,
-    KINETIX_INTF_USB_1_1    = 2,
-    KINETIX_INTF_USB_2_0    = 3,
-    KINETIX_INTF_USB_3_0    = 4,
-    KINETIX_INTF_USB_3_1    = 5,
-    KINETIX_INTF_PCIE       = 6,
-    KINETIX_INTF_PCIE_x1    = 7,
-    KINETIX_INTF_PCIE_x4    = 8,
-    KINETIX_INTF_PCIE_x8    = 9,
-    KINETIX_INTF_VIRTUAL    = 10,
-    KINETIX_INTF_ETHERNET   = 11,
-} KINETIX_COMM_INTERFACE;
+    KTX_INTF_UNKNOWN = 0,
+    KTX_INTF_USB = 1,
+    KTX_INTF_USB_1_1 = 2,
+    KTX_INTF_USB_2_0 = 3,
+    KTX_INTF_USB_3_0 = 4,
+    KTX_INTF_USB_3_1 = 5,
+    KTX_INTF_PCIE = 6,
+    KTX_INTF_PCIE_x1 = 7,
+    KTX_INTF_PCIE_x4 = 8,
+    KTX_INTF_PCIE_x8 = 9,
+    KTX_INTF_VIRTUAL = 10,
+    KTX_INTF_ETHERNET = 11,
+} KTX_COMM_INTF;
 
-
-class ADKinetix : public ADDriver
-{
-public:
-
-    ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int maxSizeY, NDDataType_t dataType,
-                int maxBuffers, size_t maxMemory, int priority, int stackSize);
+class ADKinetix : public ADDriver {
+   public:
+    ADKinetix(int deviceIndex, const char* portName);
 
     /* These are the methods that we override from ADDriver */
-    virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
-    virtual asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value);
-    void report(FILE *fp, int details);
+    virtual asynStatus writeInt32(asynUser* pasynUser, epicsInt32 value);
+    virtual asynStatus writeFloat64(asynUser* pasynUser, epicsFloat64 value);
+    void report(FILE* fp, int details);
     void monitorThread();
     void acquisitionThread();
-    ~ADKinetix ();
+    ~ADKinetix();
     bool waitForEofEvent(uns32 timeoutMs);
 
+   protected:
+    int KTX_Temperature;
+#define FIRST_KTX_PARAM KTX_Temperature
+    int KTX_FanSpeed;
+    int KTX_StopAcqOnTimeout;
+    int KTX_WaitForFrameTimeout;
 
-protected:
-    int KinetixTemperature;
-    #define FIRST_KINETIX_PARAM KinetixTemperature
-    int KinetixFanSpeed;
-    int KinetixStopAcqOnTimeout;
-    int KinetixWaitForFrameTimeout;
+    int KTX_CommInterface;
 
-    int KinetixCommInterface;
+    int KTX_ReadoutMode;
+    int KTX_ApplyReadoutMode;
+    int KTX_ModeValid;
+    int KTX_ReadoutPortIdx;
+    int KTX_ReadoutPortDesc;
+    int KTX_SpeedIdx;
+    int KTX_SpeedDesc;
+    int KTX_GainIdx;
+    int KTX_GainDesc;
+#define LAST_KTX_PARAM KTX_GainDesc
 
-    int KinetixReadoutMode;
-    int KinetixApplyReadoutMode;
-    int KinetixModeValid;
-    int KinetixReadoutPortIdx;
-    int KinetixReadoutPortDesc;
-    int KinetixSpeedIdx;
-    int KinetixSpeedDesc;
-    int KinetixGainIdx;
-    int KinetixGainDesc;
-    #define LAST_KINETIX_PARAM KinetixGainDesc 
-
-private:
-    void reportKinetixError(const char *functionName, const char *appMessage);
+   private:
+    void reportKinetixError(const char* functionName);
 
     bool isParamAvailable(int16 hcam, uns32 paramID, const char* paramName);
     bool readEnumeration(int16 hcam, NVPC* pNvpc, uns32 paramID, const char* paramName);
@@ -142,7 +153,7 @@ private:
     void getCurrentFrameDimensions(size_t* dims);
 
     NDDataType_t getCurrentNDBitDepth();
-    CameraContext* cameraContext; 
+    CameraContext* cameraContext;
     bool acquisitionActive = false;
     bool monitoringActive = false;
     int deviceIndex;
@@ -150,8 +161,6 @@ private:
     epicsThreadId monitorThreadId, acquisitionThreadId;
 };
 
-#define NUM_KINETIX_PARAMS ((int)(&LAST_KINETIX_PARAM - &FIRST_KINETIX_PARAM + 1))
-
-//______________________________________________________________________________________________
+#define NUM_KTX_PARAMS ((int)(&LAST_KTX_PARAM - &FIRST_KTX_PARAM + 1))
 
 #endif
