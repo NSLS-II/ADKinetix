@@ -70,6 +70,7 @@ static const char* driverName = "ADKinetix";
 #define KTX_CommInterfaceString "KTX_INTERFACE"
 
 // Readout mode signals
+#define KTX_MinExpResString "KTX_MIN_EXP_RES"
 #define KTX_ReadoutModeString "KTX_READOUT_MODE"
 #define KTX_ApplyReadoutModeString "KTX_APPLY_MODE"
 #define KTX_ModeValidString "KTX_MODE_VALID"
@@ -103,6 +104,13 @@ typedef enum {
     KTX_INTF_ETHERNET = 11,
 } KTX_COMM_INTF;
 
+// Potential minimum exposure resolution
+typedef enum {
+    KTX_MIN_EXP_RES_S = 0,
+    KTX_MIN_EXP_RES_MS = 1,
+    KTX_MIN_EXP_RES_US = 2,
+} KTX_MIN_EXP_RES;
+
 class ADKinetix : public ADDriver {
    public:
     ADKinetix(int deviceIndex, const char* portName);
@@ -122,9 +130,8 @@ class ADKinetix : public ADDriver {
     int KTX_FanSpeed;
     int KTX_StopAcqOnTimeout;
     int KTX_WaitForFrameTimeout;
-
     int KTX_CommInterface;
-
+    int KTX_MinExpRes;
     int KTX_ReadoutMode;
     int KTX_ApplyReadoutMode;
     int KTX_ModeValid;
@@ -151,6 +158,7 @@ class ADKinetix : public ADDriver {
     void acquireStop();
     void updateCameraRegion();
     void getCurrentFrameDimensions(size_t* dims);
+    asynStatus setMinExpRes(KTX_MIN_EXP_RES currentExpRes, KTX_MIN_EXP_RES minExpRes);
 
     NDDataType_t getCurrentNDBitDepth();
     CameraContext* cameraContext;

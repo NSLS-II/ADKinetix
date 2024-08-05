@@ -222,6 +222,33 @@ record(mbbi, "$(P)$(R)GainIdx_RBV") {
 }
 
 
+record(mbbo, "$(P)$(R)MinExpRes") {
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KTX_MIN_EXP_RES")
+    field(ZRST, "s")
+    field(ZRVL, "0")
+    field(ONST, "ms")
+    field(ONVL, "1")
+    field(TWST, "us")
+    field(TWVL, "2")
+    field(VAL, "1") # Default min exposure res is 1 ms
+    field(PINI, "YES")
+}
+
+
+record(mbbi, "$(P)$(R)MinExpRes_RBV") {
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))KTX_MIN_EXP_RES")
+    field(ZRST, "s")
+    field(ZRVL, "0")
+    field(ONST, "ms")
+    field(ONVL, "1")
+    field(TWST, "us")
+    field(TWVL, "2")
+    field(SCAN, "I/O Intr")
+}
+
+
 record(stringin, "$(P)$(R)GainDesc_RBV") {
     field(DTYP, "asynOctetRead")
     field(INP, "@asyn($(PORT),$(ADDR),$(TIMEOUT))KTX_GAIN_DESC")
