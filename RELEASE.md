@@ -6,6 +6,13 @@ Tagged source code releases can be obtained at https://github.com/NSLS-II/ADKine
 
 # Release Notes
 
+### R1-1 (20-Aug-2024)
+
+* Code cleanup & formatting
+* Improve logging messages
+* Allow for specifying minimum exposure resolution for sub 1 ms exposures.
+* Add record for tracking connection mode.
+
 ### R1-0 (7-June-2024)
 
 * Initial release of ADKinetix.
