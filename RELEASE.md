@@ -13,7 +13,7 @@ Tagged source code releases can be obtained at https://github.com/NSLS-II/ADKine
 * Allow for specifying minimum exposure resolution for sub 1 ms exposures.
 * Add record for tracking connection mode.
 
-### R1-0 (7-June-2024)
+### R1-0 (26-July-2024)
 
 * Initial release of ADKinetix.
 * Extensively tested on RH8, using both USB and PCIE connection modes.
