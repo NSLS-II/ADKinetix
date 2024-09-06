@@ -16,7 +16,7 @@ On windows, run the installer that comes with the download. On linux, unzip the 
 Next, you will need to install the PCIE card that came with the detector in the PC or server that you are using. You will need at least an `x4` slot.
 The camera should have come with two Mini-SAS HD 8644 copper cables. These are quite short, but are a good way of making sure that your PCIE card is installed correctly.
 For situations where the server will be far away from the camera, you will need to purchase a set of longer cables from Dolphin Interconnect Solutions (other branded cables may work, but Teledyne does not guarantee this).
-At HEX, we purchased 50 meter long cables w/ product code `MSFC50M` from [the Dolphib website](https://www.dolphinics.com/products/PCI_Express_SFF-8644_cables.html), and these have worked well.
+At HEX, we purchased 50 meter long cables w/ product code `MSFC50M` from [the Dolphin website](https://www.dolphinics.com/products/PCI_Express_SFF-8644_cables.html), and these have worked well.
 
 ### Step 2 - Configure the PCIE Kernel Drivers
 
