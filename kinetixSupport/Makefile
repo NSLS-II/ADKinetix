@@ -13,7 +13,7 @@ LIB_INSTALLS_Linux += ../os/linux-x86_64/libpvcam.so
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libpvcam.so.2
 LIB_INSTALLS_Linux += ../os/linux-x86_64/libpvcam.so.2.6
 
-LIB_INSTALLS_WIN32 += ../os/WIN32/pvcam64.lib
+LIB_INSTALLS_WIN32 += ../os/windows-x64/pvcam64.lib
 
 
 #=============================
