@@ -5,9 +5,6 @@ include $(TOP)/configure/CONFIG
 #=============================
 LIBRARY_NAME = ADKinetix 
 
-# Only build for 32bit versions of Windows and Linux.
-# Cygwin no longer recognizes the .lib files.
-
 USR_CFLAGS_WIN32 +=   -DWIN32
 USR_CXXFLAGS_WIN32 += -DWIN32
 
